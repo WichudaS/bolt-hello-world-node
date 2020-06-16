@@ -1,8 +1,8 @@
 const axios = require('axios');
 const qs = require('qs');
 
-const JsonDB = require('node-json-db');
-const Config = require('node-json-db/dist/lib/JsonDBConfig');
+//const JsonDB = require('node-json-db');
+//const Config = require('node-json-db/dist/lib/JsonDBConfig');
 //old version
 //const db = new JsonDB('notes', true, false);
 //var db = new JsonDB(new Config("notes", true, false, '/'));
