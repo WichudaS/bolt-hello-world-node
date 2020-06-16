@@ -1,6 +1,5 @@
-  const momMessageInitial = {
+  const momMsgInit = {
 	"blocks": [
-    //first block from 'มาบันทึกการประชุมกันเถอะ' => 
 		{
 			"type": "section",
 			"text": {
@@ -20,7 +19,6 @@
 		{
 			"type": "divider"
 		},
-    //pull gcal list in this section
 		{
 			"type": "section",
 			"text": {
@@ -35,36 +33,11 @@
 					"text": "เลือกการประชุม",
 					"emoji": true
 				},
-        //make gcal list here**********************************************
+
 				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "PLM: weekly meeting#1",
-							"emoji": true
-						},
-						"value": "PLM: weekly meeting#1"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "PLM: weekly meeting#2",
-							"emoji": true
-						},
-						"value": "PLM: weekly meeting#2"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "KTH: weekly meeting#1",
-							"emoji": true
-						},
-						"value": "KTH: weekly meeting#1"
-					}
 				]
 			}
 		},
-    //NOTE:
 		{
 			"type": "context",
 			"elements": [
@@ -77,8 +50,7 @@
 		{
 			"type": "divider"
 		},
-    //'รายละเอียดการประชุม'
-		{
+	  {
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
@@ -95,19 +67,17 @@
 				"value": "edit_meeting_data"
 			}
 		},
-    //update meeting_data here*******************************
-		{
+  	{
 			"type": "section",
 			"block_id": "meeting_data",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*- ชื่อการประชุม : *\n *- วัน-เวลา : * \n *- สถานที่ : *\n *- ผู้เข้าร่วม : *\n *- หัวข้อการประชุม/รายละเอียดการประชุม : *\n "
+				"text": "*- ชื่อการประชุม :* \n *- วัน-เวลา :* \n *- สถานที่ :* \n *- ผู้เข้าร่วม :* \n *- หัวข้อการประชุม/รายละเอียดการประชุม :* \n "
 			}
 		},
 		{
 			"type": "divider"
 		},
-    //followupTask block
 		{
 			"type": "section",
 			"text": {
@@ -129,97 +99,9 @@
 				]
 			}
 		},
-    //select_task from Airtable block
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "static_select",
-					"action_id": "select_task",
-					"placeholder": {
-						"type": "plain_text",
-						"text": "เลือกงานติดตาม",
-						"emoji": true
-					},
-					"options": [
-            //update airtable task list here********************************************
-						{
-							"text": {
-								"type": "plain_text",
-								"text": "HO9: Teerapon ส่ง MP วันที่ 1/6/2020",
-								"emoji": true
-							},
-							"value": "HO9: Teerapon ส่ง MP วันที่ 1/6/2020"
-						},
-						{
-							"text": {
-								"type": "plain_text",
-								"text": "PLM: Pattarin ทำแบบเสริมเหล็กกลีบดอก 1 วันที่ 25/5/2020",
-								"emoji": true
-							},
-							"value": "PLM: Pattarin ทำแบบเสริมเหล็กกลีบดอก 1 วันที่ 25/5/2020"
-						}
-					]
-				},
-				{
-					"type": "button",
-					"action_id": "task_result_completed",
-					"text": {
-						"type": "plain_text",
-						"text": "เสร็จแล้ว",
-						"emoji": true
-					},
-					"value": "task_completed",
-					"style": "primary"
-				},
-				{
-					"type": "button",
-					"action_id": "task_result_notcompleted",
-					"text": {
-						"type": "plain_text",
-						"text": "ยังไม่เสร็จ",
-						"emoji": true
-					},
-					"value": "task_in_progress",
-					"style": "danger"
-				}
-			]
-		},
-    //followupTask summary here*****************************************
-		{
-			"type": "section",
-			"block_id": "task_result",
-			"text": {
-				"type": "mrkdwn",
-				"text": "*Task:* PLM: Pattarin ทำแบบเสริมเหล็กกลีบดอก 1 วันที่ 25/5/2020\n *Update:* เสร็จแล้ว ส่งแล้ววันที่ 20/5/2020"
-			},
-			"accessory": {
-				"type": "overflow",
-				"action_id": "followuptask1",
-				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "แก้ไข",
-							"emoji": true
-						},
-						"value": "edit_followuptask"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "ลบ",
-							"emoji": true
-						},
-						"value": "delete_followuptask"
-					}
-				]
-			}
-		},
 		{
 			"type": "divider"
 		},
-    //agenda block STARTS HERE
 		{
 			"type": "section",
 			"text": {
@@ -273,7 +155,6 @@
 				]
 			}
 		},
-    //note header
 		{
 			"type": "section",
 			"text": {
@@ -281,68 +162,6 @@
 				"text": ":memo: *Note*"
 			}
 		},
-    //push note list here*******************************************
-		{
-			"type": "section",
-			"block_id": "note1",
-			"text": {
-				"type": "mrkdwn",
-				"text": "- ทดสอบโน๊ต 1"
-			},
-			"accessory": {
-				"type": "overflow",
-				"action_id": "action_note1",
-				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "แก้ไข",
-							"emoji": true
-						},
-						"value": "edit_note"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "ลบ",
-							"emoji": true
-						},
-						"value": "delete_note"
-					}
-				]
-			}
-		},
-		{
-			"type": "section",
-			"block_id": "note2",
-			"text": {
-				"type": "mrkdwn",
-				"text": "- ทดสอบโน๊ต 2"
-			},
-			"accessory": {
-				"type": "overflow",
-				"action_id": "action_note2",
-				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "แก้ไข",
-							"emoji": true
-						},
-						"value": "edit_note"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "ลบ",
-							"emoji": true
-						},
-						"value": "delete_note"
-					}
-				]
-			}
-		},
-    //decision header
 		{
 			"type": "section",
 			"text": {
@@ -350,38 +169,6 @@
 				"text": ":round_pushpin: *ข้อสรุป*"
 			}
 		},
-    //push decision list here*********************************************
-		{
-			"type": "section",
-			"block_id": "decision1",
-			"text": {
-				"type": "mrkdwn",
-				"text": "- ข้อสรุป 1"
-			},
-			"accessory": {
-				"type": "overflow",
-				"action_id": "action_decision1",
-				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "แก้ไข",
-							"emoji": true
-						},
-						"value": "edit_decision"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "ลบ",
-							"emoji": true
-						},
-						"value": "delete_decision"
-					}
-				]
-			}
-		},
-    //task header
 		{
 			"type": "section",
 			"text": {
@@ -389,41 +176,9 @@
 				"text": ":construction_worker: *สิ่งที่ต้องทำต่อ*"
 			}
 		},
-    //push task list here*********************************************
-		{
-			"type": "section",
-			"block_id": "task1",
-			"text": {
-				"type": "mrkdwn",
-				"text": "- ทำต่อ 1"
-			},
-			"accessory": {
-				"type": "overflow",
-				"action_id": "action_task1",
-				"options": [
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "แก้ไข",
-							"emoji": true
-						},
-						"value": "edit_task"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "ลบ",
-							"emoji": true
-						},
-						"value": "delete_task"
-					}
-				]
-			}
-		},
 		{
 			"type": "divider"
 		},
-    //agenda block ENDS HERE**********************************************
 		{
 			"type": "actions",
 			"elements": [

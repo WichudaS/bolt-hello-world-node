@@ -17,8 +17,9 @@ const qs = require('qs');
 const signature = require('./verifySignature');
 const appHome = require('./appHome');
 const mom = require('./mom');
-const help = require('./help');
+const msg = require('./msg');
 const modal = require('./modal');
+const test = require('./Test');
 
 const app = express();
 
@@ -54,11 +55,6 @@ app.use(bodyParser.json({ verify: rawBodyBuffer }));
 //=============================DECLARE GLOBAL VARIABLE=============================
 var viewID = "initial value for viewID";
 var private_metadata = "";
-
-
-
-
-
 
 
 
@@ -123,10 +119,12 @@ app.post('/slack/commands', async(req, res) => {
   console.log("responseURL is: " + response_url);
   const token = req.body.token;
   console.log("Request token is: " + token);
+  const user_id = req.body.user_id;
+  console.log("user_id is: " + user_id);
   
   //if text contains 'mom' => send MOM message
   if (text.includes("mom")||text.includes("บันทึกการประชุม")) {
-    res.status(200).end; //=ack();
+    res.status(200); //=ack();
     res.send(mom.momMsg());
     //console.log(res);
     //console.log(res.data);
@@ -143,7 +141,7 @@ app.post('/slack/commands', async(req, res) => {
   //else => send help message
   else {
     //res.status(200).end(); //=ack();
-    res.send(help.helpMsg());
+    res.send(msg.helpMsg());
   }
   
 });
@@ -167,37 +165,27 @@ app.post('/slack/actions', async(req, res) => {
       console.log(req.body.payload);  
       console.log("---------------ACTION REQUEST ENDS HERE---------------");     
       
+  
   const { token, trigger_id, user, actions, type, response_url } = JSON.parse(req.body.payload);
-   console.log({ token, trigger_id, user, actions, type });
+  const user_id = user.id;  
+  const action_id = actions[0].action_id;
+  
+      console.log({ token, trigger_id, user, actions, type });
       console.log("response_url = " + response_url);
-      console.log("action_id is " + actions[0].action_id);
-  switch(actions[0].action_id) {
-  //Actions in 'Help Message'==================
-    // Open MOM Modal In 'help message'
-    case "open_momMsg" : {
-      await res.send(mom.momMsgHelp(response_url)); 
-      await console.log("MOM message sent!");
-      break;
-    } 
-  
-  //Actions in 'MOM Message'==================
-    // Update meeting data   
-    case "select_meeting" : {
-      await res.send(mom.updatemomMsg(response_url)); 
-      await console.log("MOM message sent!");
-      break;
-    }
-    default:{ res.sendStatus(404); }
-  
-  }
- 
+      console.log("action_id = " + action_id);
+      console.log("user_id = "+ user_id);  
   
   
-  
-  
-  
-  
-  
+  switch(action_id) {
+  case "deletemessage":
+    // code block
+      console.log("delete message case");
+    //res.status(200); //=ack();
+    res.send(await msg.delMsg(response_url));
+    break;
+  default:
+    // code block
+}
   
   // Modal forms submitted --
 /*      
@@ -231,6 +219,6 @@ const server = app.listen(5000, () => {
 });
 app.get('/', async(req, res) => {
   //res.send(message.logData());
-  console.log(mom.logData());
+ // mom.logData();
 });
 
