@@ -14,7 +14,7 @@
     "tsscmp": "^1.0.6"
   },
   "engines": {
-    "node": "8.x"
+    "node": "12.x"
   },
   "author": "Wichuda Sirithana",
   "license": "MIT",
