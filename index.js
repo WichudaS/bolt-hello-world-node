@@ -70,8 +70,8 @@ app.post('/slack/events', async(req, res) => {
       console.log(req.context);       
       console.log("----------req.payload----------");   
       console.log(req.payload);  
-      console.log("----------req.body.event.text----------");   
-      console.log(req.body.event.text);    
+      //console.log("----------req.body.event.text----------");   
+      //console.log(req.body.event.text);    
       console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
   //RESPONSE TO EVENT CASES===============
   switch (req.body.type) {
