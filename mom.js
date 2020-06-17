@@ -1,6 +1,6 @@
 //=============================Initialize=============================
-const axios = require("axios");
-const qs = require("qs");
+//const axios = require("axios");
+//const qs = require("qs");
 
 const apiUrl = "https://slack.com/api";
 
