@@ -1,3 +1,5 @@
+/*
+
 const momdb = {};
 
 const userInput ={
@@ -35,3 +37,5 @@ const logdb = () => {
 
 
 module.exports = { logdb };
+
+*/

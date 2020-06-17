@@ -1,3 +1,5 @@
+/*
+
 //=============================INITIALIZE APP=============================
 const app = require('./index');
 const axios = require('axios'); 
@@ -368,3 +370,5 @@ const updateModal = async(viewID) => {
 
 //=============================EXPORT FUNCTIONS=============================
 module.exports = {openModal,updateModal};
+
+*/

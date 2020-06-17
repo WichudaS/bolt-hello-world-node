@@ -1,4 +1,6 @@
-  const momMsgInit = {
+ /*
+ 
+ const momMsgInit = {
 	"blocks": [
 		{
 			"type": "section",
@@ -207,3 +209,5 @@
 		}
 	]
 };
+
+*/
