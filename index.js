@@ -12,6 +12,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios'); 
 const qs = require('qs');
+const Airtable = require("airtable");
+const dateFormat = require("dateformat");
 //const amplify = require('amplifyjs');
 
 const signature = require('./verifySignature');
@@ -24,6 +26,8 @@ const test = require('./Test');
 const app = express();
 
 const apiUrl = 'https://slack.com/api';
+const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
+
 
 /*
  * Parse application/x-www-form-urlencoded && application/json
@@ -48,11 +52,22 @@ app.use(bodyParser.json({ verify: rawBodyBuffer }));
 
 //=============================FUNCTION DECLARATION=============================
 
+//check if it's not empty
+function IsNotEmpty(value) {
+  if (value) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
 
 
 
 
 //=============================DECLARE GLOBAL VARIABLE=============================
+const port = process.env.PORT || 3000;
 var viewID = "initial value for viewID";
 var private_metadata = "";
 
@@ -70,8 +85,8 @@ app.post('/slack/events', async(req, res) => {
       console.log(req.context);       
       console.log("----------req.payload----------");   
       console.log(req.payload);  
-      //console.log("----------req.body.event.text----------");   
-      //console.log(req.body.event.text);    
+      // console.log("----------req.body.event----------");   
+      // console.log(req.body.event);    
       console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
   //RESPONSE TO EVENT CASES===============
   switch (req.body.type) {
@@ -94,6 +109,255 @@ app.post('/slack/events', async(req, res) => {
       break;
     }
   }
+  
+  
+  //If there are event => Do something
+  if(req.body.event) {
+    const event = req.body.event;
+    console.log(`event = ${event}`);
+
+
+    //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable'
+    if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
+      
+          
+      //===DECLARE VAR====
+      
+      var name = event.text.split("*").splice(0,1).reduce((n) => n).trim();
+      console.log(name);
+      var workType = "";
+      var des = "";
+      var imgURL = "";
+  
+      for (var i of event.attachments) {
+        console.log("i = " + i);
+        if (Object.keys(i).includes("text")) {
+            workType = i.text.split("*").splice(1,1);
+            des = i.text.split("_").splice(1,1);
+            console.log("workType = " + workType);
+            console.log("des = " + des);
+          } else if (Object.keys(i).includes("image_url")) {
+            imgURL = i.image_url;
+            console.log("imgURL = " + imgURL);
+          } else {
+          }
+      }
+  
+      // var dateTime = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
+      var dateTime = new Date(new Date().toLocaleString());
+      console.log(dateTime);
+  
+      var day = dateFormat(dateTime, "dd/mm/yyyy");
+      console.log(day);
+      
+      const recordPK = `${name} - ${day}`;
+      recordPK.toString();
+      console.log(`recordPK = ${recordPK}`);
+  
+  
+      //===DECLARE FUNCTION===
+  
+        //Airtable Layout
+      function JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL) {
+  
+        return new Promise((resolve, reject) => {
+  
+          if (event.text.includes("jibbled")) {
+            if (event.text.includes("jibbled in") && !(recordID) ) {
+              let layout = {
+                "fields": {
+                  "ชื่อพนักงาน": name,
+                  "เวลาเข้างาน (First In)": dateTime,
+                  "ประเภทงาน": workType,
+                  "รายละเอียด": des,
+                  "วันที่": day
+                }
+              }
+              
+              let layoutArray = [];
+              layoutArray = layoutArray.concat(layout);
+  
+              console.log(layoutArray);
+              resolve(layoutArray);
+            }
+            if (event.text.includes("jibbled in") && (recordID) ) {
+              let layout = {
+                "id": recordID,
+                "fields": {
+                  "ประเภทงาน": workType,
+                  "รายละเอียด": des
+                }
+              }
+  
+              let layoutArray = [];
+              layoutArray = layoutArray.concat(layout);
+  
+              console.log(layoutArray);
+              resolve(layoutArray);
+            }
+            if (event.text.includes("jibbled out") && (recordID) ) {
+              let layout = {
+                "id": recordID,
+                "fields": {
+                  "เวลาออกงาน (Last Out)": dateTime
+                }
+              }
+  
+              let layoutArray = [];
+              layoutArray = layoutArray.concat(layout);
+  
+              console.log(layoutArray);
+              resolve(layoutArray);
+            }
+  
+          } else {
+            reject();
+          }
+        }).catch(err => {
+          console.log(err);
+        });
+      }
+  
+      //Search for Airtable record
+      function RetrieveID(base, tableName, recordPK) {
+        console.log(`tableName = ${tableName}`);
+        console.log(`recordPK = ${recordPK}`);
+        // console.log(`base = ${base}`);
+        console.log(`filerformula = {ชื่อและวันที่}="${recordPK}"` );
+        
+        return new Promise((resolve, reject) => {
+          if (recordPK) {
+            console.log(`case recordPK`);
+            //find an existing Task recordID from AIRTABLE_BASE_ID
+            base("บันทึกเวลาเข้าออก")
+            .select({
+              maxRecords: 1,
+              view: "Grid view",
+              fields: ["ชื่อและวันที่","ชื่อพนักงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด"],
+              filterByFormula: `{ชื่อและวันที่}="${recordPK}"`
+            }).all()
+            .then((records) => {
+              console.log(`case successful`);
+              console.log(records);
+              if(records.length>0) {
+                records.forEach(item => {
+                  console.log(`Found the record, recordID is = ${item.id}`);
+                  console.log(item);
+                  workType = workType.concat(item["fields"]["ประเภทงาน"]);
+                  console.log(`workType = ${workType}`);
+                  des = des.concat(item["fields"]["รายละเอียด"]);
+                  console.log(`des = ${des}`);
+                  resolve(item.id);
+                });
+              } 
+              else {
+                console.log(`error case, recordID = ""`); 
+                recordID = ""; 
+                resolve(recordID);
+              }
+            });
+          } else {
+            console.log("Nothing match your search");
+            reject();
+          }
+        }).catch(err => {
+          console.log("Record not found, set recordID to empty.");
+          recordID="";
+        });
+      }
+  
+  
+      //Create new record
+      function RecordCreate(base, tableName, dataGroup) {
+        //test OK!
+        console.log("dataGroup = ");
+        console.log(dataGroup);
+  
+        return new Promise((resolve, reject) => {
+          if (dataGroup) {
+            var allRecord = [];
+            base(tableName).create(dataGroup, { typecast: true }, function(err,records) {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              records.forEach(function(record) {
+                allRecord = allRecord.concat(record);
+                console.log(`record ID ${record.id} from ${tableName} is CREATED!`);
+              });
+              console.log("allRecord = ");
+              console.log(allRecord);
+              resolve(allRecord);
+            });
+          } else {
+            reject();
+          }
+        }).catch(err => {
+          console.log(err);
+        });
+      }
+  
+      //Update extisting record
+      function RecordUpdate(base, tableName, dataGroup) {
+        //test OK!
+        console.log("dataGroup = ");
+        console.log(JSON.stringify(dataGroup));
+  
+        return new Promise((resolve, reject) => {
+          let text = "";
+          if (dataGroup) {
+            base(tableName).update(dataGroup, { typecast: true }, function(
+              err,
+              records
+            ) {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              records.forEach(function(record) {
+                text = `record ID ${record.id} from ${tableName} is UPDATED!`
+              });
+              resolve(text);
+            });
+          } else {
+            reject();
+          }
+        }).catch(err => {
+          console.log(err);
+        });
+      }
+  
+  
+  
+      //===RUN===
+    
+      var baseID = "appAThxvZSRLzrXta"; //Jibble Datastore
+      console.log(`baseID = ${baseID}`);
+  
+      var tableName = "บันทึกเวลาเข้าออก"; 
+      console.log(`tableName = ${tableName}`);
+  
+      var recordID = await RetrieveID(baseDR, tableName, recordPK);
+      console.log(`recordID = ${recordID}`);
+      var dataGroup = await JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL);
+      console.log(`dataGroup = ${dataGroup}`);
+  
+      if (recordID) {
+        var updateRecord = await RecordUpdate(baseDR, tableName, dataGroup);
+        console.log(updateRecord);
+      }
+      else {
+        var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
+        console.log(createRecord);
+      }
+      
+    }
+
+
+
+  }
+  
+  
 });
 
 
@@ -214,7 +478,7 @@ app.post('/slack/actions', async(req, res) => {
 
 //=============================LISTEN TO PORT=============================
 /* Running Express server */
-app.listen(process.env.PORT, () => {
-  console.log("Your app is listening on port " + process.env.PORT);
+app.listen(port, () => {
+  console.log("Your app is listening on port " + port);
 });
 
