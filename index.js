@@ -1,3 +1,5 @@
+
+
 //=============================INITIALIZE APP=============================
 /* 
  * Slack API Demo 
@@ -16,6 +18,8 @@ const Airtable = require("airtable");
 const dateFormat = require("dateformat");
 //const amplify = require('amplifyjs');
 
+
+//import module from other .JS files
 const signature = require('./verifySignature');
 const appHome = require('./appHome');
 const mom = require('./mom');
@@ -23,19 +27,20 @@ const msg = require('./msg');
 const modal = require('./modal');
 const test = require('./Test');
 
+//apply middlewares
 const app = express();
 
 const apiUrl = 'https://slack.com/api';
 const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
 
 
-/*
+  /*
  * Parse application/x-www-form-urlencoded && application/json
  * Use body-parser's `verify` callback to export a parsed raw body
  * that you need to use to verify the signature
  *
  * Forget this if you're using Bolt framework or either SDK, otherwise you need to implement this by yourself to verify signature!
- */
+*/ 
 
 const rawBodyBuffer = (req, res, buf, encoding) => {
   if (buf && buf.length) {
@@ -45,7 +50,6 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
 
 app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
 app.use(bodyParser.json({ verify: rawBodyBuffer }));
-
 
 
 
@@ -129,15 +133,15 @@ res.status(200); //=ack();
       
       var name = event.text.split("*").splice(0,1).reduce((n) => n).trim();
       console.log(name);
-      var workType = "";
-      var des = "";
+      var workType = [];
+      var des = [];
       var imgURL = "";
   
       for (var i of event.attachments) {
         console.log("i = " + i);
         if (Object.keys(i).includes("text")) {
-            workType = i.text.split("*").splice(1,1);
-            des = i.text.split("_").splice(1,1);
+            workType = workType.concat(i.text.split("*").splice(1,1));
+            des = des.concat(i.text.split("_").splice(1,1));
             console.log("workType = " + workType);
             console.log("des = " + des);
           } else if (Object.keys(i).includes("image_url")) {
@@ -149,10 +153,10 @@ res.status(200); //=ack();
   
       // var dateTime = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
       var dateTime = new Date(new Date().toLocaleString());
-      console.log(dateTime);
+      console.log(`dateTime = ${dateTime}`);
   
       var day = dateFormat(dateTime, "dd/mm/yyyy");
-      console.log(day);
+      console.log(`day = ${day}`);
       
       const recordPK = `${name} - ${day}`;
       recordPK.toString();
@@ -163,7 +167,7 @@ res.status(200); //=ack();
   
         //Airtable Layout
       function JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL) {
-  
+        console.log("=====Jibble layout=====");
         return new Promise((resolve, reject) => {
   
           if (event.text.includes("jibbled")) {
@@ -224,6 +228,7 @@ res.status(200); //=ack();
   
       //Search for Airtable record
       function RetrieveID(base, tableName, recordPK) {
+        console.log("=====Retrieve record=====");
         console.log(`tableName = ${tableName}`);
         console.log(`recordPK = ${recordPK}`);
         // console.log(`base = ${base}`);
@@ -281,6 +286,7 @@ res.status(200); //=ack();
   
       //Create new record
       function RecordCreate(base, tableName, dataGroup) {
+        console.log("=====Create new record=====");
         //test OK!
         console.log("dataGroup = ");
         console.log(dataGroup);
@@ -311,6 +317,7 @@ res.status(200); //=ack();
   
       //Update extisting record
       function RecordUpdate(base, tableName, dataGroup) {
+        console.log("=====Update existing record=====");
         //test OK!
         console.log("dataGroup = ");
         console.log(JSON.stringify(dataGroup));
@@ -369,7 +376,7 @@ res.status(200); //=ack();
 
   }
   
-  
+  res.end();
 });
 
 
@@ -400,9 +407,9 @@ app.post('/slack/commands', async(req, res) => {
   console.log("user_id is: " + user_id);
   
   //if text contains 'mom' => send MOM message
-  if (text.includes("mom")||text.includes("บันทึกการประชุม")) {
-    res.status(200); //=ack();
-    res.send(mom.momMsg());
+  if (text.includes("mom") || text.includes("Mom") || text.includes("MOM") || text.includes("บันทึกการประชุม")) {
+    console.log("==SEND MOM MESSAGE==");
+    res.send(msg.momMsg());
     //console.log(res);
     //console.log(res.data);
     //console.log(res.body);
@@ -415,9 +422,14 @@ app.post('/slack/commands', async(req, res) => {
     console.log("ViewID in index.js for this modal is " + viewID);
     */
   }
+  //if text contains 'dr' => send DR message
+  else if (text.includes("dr") || text.includes("DR") || req.body.text.includes("daily report") || req.body.text.includes("Daily Report") || req.body.text.includes("Daily report") || req.body.text.includes("DAILY REPORT")) {
+    console.log("==SEND DR MESSAGE==");
+    res.send(msg.drMsg());
+  }
   //else => send help message
   else {
-    //res.status(200).end(); //=ack();
+    console.log("==SEND HELP MESSAGE==");
     res.send(msg.helpMsg());
   }
   
@@ -491,7 +503,7 @@ app.post('/slack/actions', async(req, res) => {
 
 
 //=============================LISTEN TO PORT=============================
-/* Running Express server */
+  /* Running Express server */
 app.listen(port, () => {
   console.log("Your app is listening on port " + port);
 });
