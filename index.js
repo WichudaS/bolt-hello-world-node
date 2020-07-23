@@ -75,12 +75,16 @@ var private_metadata = "";
 
 //=============================EVENT RESPONSE=============================
 app.post('/slack/events', async(req, res) => {
+res.status(200); //=ack();
+  
   //LOG REQUEST===============    
       console.log("---------------" + req.body.type +" REQUEST STARTS HERE---------------");
       console.log("----------req type----------");   
       console.log(req.body.type);    
       console.log("----------req.body----------");   
       console.log(req.body);  
+      console.log("----------req.body.string----------");   
+      console.log(JSON.stringify(req.body)); 
       console.log("----------req.context----------");   
       console.log(req.context);       
       console.log("----------req.payload----------");   
@@ -114,12 +118,12 @@ app.post('/slack/events', async(req, res) => {
   //If there are event => Do something
   if(req.body.event) {
     const event = req.body.event;
-    console.log(`event = ${event}`);
+    console.log(`event = ${JSON.stringify(event)}`);
 
 
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable'
     if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
-      
+      console.log("CASE: Save jibble message to Airtable");
           
       //===DECLARE VAR====
       
@@ -243,9 +247,17 @@ app.post('/slack/events', async(req, res) => {
                 records.forEach(item => {
                   console.log(`Found the record, recordID is = ${item.id}`);
                   console.log(item);
+                  //add existing record's workType into new workType message
                   workType = workType.concat(item["fields"]["ประเภทงาน"]);
+                  if(workType.includes(null) || workType.includes(undefined) || workType.includes("")) {
+                    workType = workType.filter(n => n!= null && n!= undefined && n!="");
+                  }                  
                   console.log(`workType = ${workType}`);
+                  //add existing record's des into new des message
                   des = des.concat(item["fields"]["รายละเอียด"]);
+                  if(des.includes(null) || des.includes(undefined) || des.includes("")) {
+                    des = des.filter(n => n!= null && n!= undefined && n!="");
+                  }
                   console.log(`des = ${des}`);
                   resolve(item.id);
                 });
@@ -364,6 +376,7 @@ app.post('/slack/events', async(req, res) => {
 
 //=============================SLASH COMMAND RESPONSE (/BOLT)=============================
 app.post('/slack/commands', async(req, res) => {
+  res.status(200); //=ack();
 //LOG ACTION REQUEST 
       console.log("---------------/bolt COMMAND REQUEST STARTS HERE---------------");
       console.log("----------req.body----------");  
@@ -416,6 +429,7 @@ app.post('/slack/commands', async(req, res) => {
 
 //=============================ACTION RESPONSE=============================
 app.post('/slack/actions', async(req, res) => {
+  res.status(200); //=ack();
   //console.log(JSON.parse(req.body.payload));
   //LOG ACTION REQUEST 
       console.log("---------------ACTION REQUEST STARTS HERE---------------");
