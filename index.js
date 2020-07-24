@@ -78,7 +78,9 @@ var private_metadata = "";
 
 
 //=============================EVENT RESPONSE=============================
-app.post('/slack/events', async(req, res) => {
+//Uncomment below line to Stop slack from event running 
+// app.post('/slack/event' , async(req, res) => {  
+app.post('/slack/events' , async(req, res) => {
 res.status(200); //=ack();
   
   //LOG REQUEST===============    
@@ -131,24 +133,46 @@ res.status(200); //=ack();
           
       //===DECLARE VAR====
       
-      var name = event.text.split("*").splice(0,1).reduce((n) => n).trim();
+      var name = [];
+      name = name.concat(event.text.split("*").splice(0,1).reduce((n) => n).trim());
       console.log(name);
+      var project = [];
       var workType = [];
       var des = [];
       var imgURL = "";
   
       for (var i of event.attachments) {
-        console.log("i = " + i);
-        if (Object.keys(i).includes("text")) {
-            workType = workType.concat(i.text.split("*").splice(1,1));
-            des = des.concat(i.text.split("_").splice(1,1));
-            console.log("workType = " + workType);
-            console.log("des = " + des);
-          } else if (Object.keys(i).includes("image_url")) {
+        console.log("i = " + JSON.stringify(i));
+        if (Object.keys(i).includes("text")) {          
+            try{
+              var projectAndWork = i.text.split("*").splice(1,1).toString().split("_");
+              if(projectAndWork.length > 1 ) {
+                project = project.concat(projectAndWork[0].trim());
+                workType = workType.concat(projectAndWork[1].trim());
+              }
+              else {
+                workType = workType.concat(projectAndWork[0].trim());
+              }
+
+              des = des.concat(i.text.split("\n").splice(1,1).toString().slice(1,-1).trim());
+
+            }
+            catch (err) {console.log(err); 
+            };
+            console.log(`project = ${project}`);
+            console.log(`workType = ${workType}`);
+            console.log(`des = ${des}`);
+          } 
+        else if (Object.keys(i).includes("image_url")) {
             imgURL = i.image_url;
-            console.log("imgURL = " + imgURL);
-          } else {
-          }
+            console.log(`imgURL = ${imgURL}`);
+          } 
+        else {
+          console.log(`project = ${project}`);
+          console.log(`workType = ${workType}`);
+          console.log(`des = ${des}`);
+          console.log(`imgURL = ${imgURL}`);
+        }
       }
   
       // var dateTime = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
@@ -176,6 +200,7 @@ res.status(200); //=ack();
                 "fields": {
                   "ชื่อพนักงาน": name,
                   "เวลาเข้างาน (First In)": dateTime,
+                  "โครงการ": project,
                   "ประเภทงาน": workType,
                   "รายละเอียด": des,
                   "วันที่": day
@@ -192,6 +217,7 @@ res.status(200); //=ack();
               let layout = {
                 "id": recordID,
                 "fields": {
+                  "โครงการ": project,
                   "ประเภทงาน": workType,
                   "รายละเอียด": des
                 }
