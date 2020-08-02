@@ -16,19 +16,33 @@ const axios = require('axios');
 const qs = require('qs');
 const Airtable = require("airtable");
 const dateFormat = require("dateformat");
-//const amplify = require('amplifyjs');
+const formidable = require("express-formidable");
+// const admin = require('firebase-admin');
+
+
 
 
 //import module from other .JS files
+// const serviceAccount = require('./bolt-hello-world-node-3ee5bea630af.json');
 const signature = require('./verifySignature');
 const appHome = require('./appHome');
-const mom = require('./mom');
 const msg = require('./msg');
 const modal = require('./modal');
-const test = require('./Test');
+const test = require('./test');
+const fn = require('./functions');
+const fs = require('./firestore');
+const dr = require('./dr');
+
+//firebase initializing
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount)
+// });
+
+// const db = admin.firestore();
 
 //apply middlewares
 const app = express();
+// const db = fs.db();
 
 const apiUrl = 'https://slack.com/api';
 const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
@@ -48,22 +62,13 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
   }
 };
 
-app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
-app.use(bodyParser.json({ verify: rawBodyBuffer }));
-
-
-
-
-//=============================FUNCTION DECLARATION=============================
-
-//check if it's not empty
-function IsNotEmpty(value) {
-  if (value) {
-    return true;
-  } else {
-    return false;
-  }
-}
+// app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
+// app.use(bodyParser.json({ verify: rawBodyBuffer }));
+app.use(formidable({
+    encoding: "utf-8",
+    uploadDir: "/my/dir",
+    multiples: true // req.files to be arrays of files
+  }));
 
 
 
@@ -77,33 +82,76 @@ var private_metadata = "";
 
 
 
+//=============================Jotform webhooks====================================
+app.post('/jotform/dr' , async function(req, res) {
+  console.log("=================RECEIVED JOTFORM WEBHOOKS===================");
+  res.status(200); // ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
+
+  //================= Parse JotForm request to JSON ===============================
+
+
+  const fields = JSON.stringify(req.fields);
+  console.log(`req fields are = \n ${fields}`);
+
+  const files = JSON.stringify(req.files);
+  console.log(`req files are = \n ${files}`);
+
+  const raw = req.fields.rawRequest;
+  console.log(`raw is = \n ${raw}`);
+
+  //๋JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
+  const rawreq = JSON.stringify(req.fields.rawRequest);
+  console.log(`\n\n\n raw req is = \n ${rawreq}`);
+
+
+  const formID = req.fields.formID;
+  console.log(`formID is = \n ${formID}`);
+
+  var parsed = JSON.parse(raw);
+  console.log(`parsed = \n ${parsed}`);
+
+  var key = Object.keys(parsed);
+  console.log(`parsed key = \n ${key}`);
+
+  console.log(`keylength = ${key.length}`);
+
+  for (var i = 0; i < key.length; i++) {
+    var k = key[i];
+    console.log(`${i+1}.${k} = ${parsed[k]}`);
+  }
+  
+  res.send("Done");
+});
+
+
+
 //=============================EVENT RESPONSE=============================
 //Uncomment below line to Stop slack from event running 
-// app.post('/slack/event' , async(req, res) => {  
+// app.get('/event' , async(req, res) => {  
 app.post('/slack/events' , async(req, res) => {
-res.status(200); //=ack();
+  res.status(200); //=ack();
   
   //LOG REQUEST===============    
-      console.log("---------------" + req.body.type +" REQUEST STARTS HERE---------------");
-      console.log("----------req type----------");   
-      console.log(req.body.type);    
-      console.log("----------req.body----------");   
-      console.log(req.body);  
-      console.log("----------req.body.string----------");   
-      console.log(JSON.stringify(req.body)); 
-      console.log("----------req.context----------");   
-      console.log(req.context);       
-      console.log("----------req.payload----------");   
-      console.log(req.payload);  
-      // console.log("----------req.body.event----------");   
-      // console.log(req.body.event);    
-      console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
-  //RESPONSE TO EVENT CASES===============
-  switch (req.body.type) {
+      console.log("---------------" + req.fields.type +" REQUEST STARTS HERE---------------");
+      console.log("----------req.fields.type----------");   
+      console.log(req.fields.type);    
+      console.log("----------req.fields----------");   
+      console.log(req.fields);  
+      console.log("----------req.fields.string----------");   
+      console.log(JSON.stringify(req.fields)); 
+      console.log("----------req.fields.context----------");   
+      console.log(req.fields.context);       
+      console.log("----------req.fields.payload----------");   
+      console.log(req.fields.payload);  
+      // console.log("----------req.fields.event----------");   
+      // console.log(req.fields.event);    
+      console.log("---------------" + req.fields.type +" REQUEST ENDS HERE---------------");     
+  //RESPONSE TO EVENT CASES===============,
+  switch (req.fields.type) {
     //RESPONSE TO URL VERIFICATION===============  
     case 'url_verification': {
       // verify Events API endpoint by returning challenge if present
-      res.send({ challenge: req.body.challenge });
+      res.send({ challenge: req.fields.challenge });
       break;
     }
     //RESPONSE TO EVENT CALLBACK ===============       
@@ -122,12 +170,13 @@ res.status(200); //=ack();
   
   
   //If there are event => Do something
-  if(req.body.event) {
-    const event = req.body.event;
+  if(req.fields.event) {
+    const event = req.fields.event;
     console.log(`event = ${JSON.stringify(event)}`);
 
 
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable'
+    
     if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
       console.log("CASE: Save jibble message to Airtable");
           
@@ -141,9 +190,10 @@ res.status(200); //=ack();
       var des = [];
       var imgURL = "";
   
-      for (var i of event.attachments) {
-        console.log("i = " + JSON.stringify(i));
-        if (Object.keys(i).includes("text")) {          
+      if(event.attachments) {
+        for (var i of event.attachments) {
+          console.log("i = " + JSON.stringify(i));
+          if (Object.keys(i).includes("text")) {          
             try{
               var projectAndWork = i.text.split("*").splice(1,1).toString().split("_");
               if(projectAndWork.length > 1 ) {
@@ -155,7 +205,9 @@ res.status(200); //=ack();
               }
 
               des = des.concat(i.text.split("\n").splice(1,1).toString().slice(1,-1).trim());
-
+              if(des.includes(null) || des.includes(undefined) || des.includes("")) {
+                des = des.filter(n => n!= null && n!= undefined && n!="");
+              }
             }
             catch (err) {console.log(err); 
             };
@@ -163,15 +215,16 @@ res.status(200); //=ack();
             console.log(`workType = ${workType}`);
             console.log(`des = ${des}`);
           } 
-        else if (Object.keys(i).includes("image_url")) {
+          else if (Object.keys(i).includes("image_url")) {
             imgURL = i.image_url;
             console.log(`imgURL = ${imgURL}`);
           } 
-        else {
-          console.log(`project = ${project}`);
-          console.log(`workType = ${workType}`);
-          console.log(`des = ${des}`);
-          console.log(`imgURL = ${imgURL}`);
+          else {
+            console.log(`project = ${project}`);
+            console.log(`workType = ${workType}`);
+            console.log(`des = ${des}`);
+            console.log(`imgURL = ${imgURL}`);
+          }
         }
       }
   
@@ -210,7 +263,7 @@ res.status(200); //=ack();
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
   
-              console.log(layoutArray);
+              console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
             if (event.text.includes("jibbled in") && (recordID) ) {
@@ -226,7 +279,7 @@ res.status(200); //=ack();
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
   
-              console.log(layoutArray);
+              console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
             if (event.text.includes("jibbled out") && (recordID) ) {
@@ -240,7 +293,7 @@ res.status(200); //=ack();
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
   
-              console.log(layoutArray);
+              console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
   
@@ -268,7 +321,7 @@ res.status(200); //=ack();
             .select({
               maxRecords: 1,
               view: "Grid view",
-              fields: ["ชื่อและวันที่","ชื่อพนักงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด"],
+              fields: ["ชื่อและวันที่","ชื่อพนักงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด","โครงการ"],
               filterByFormula: `{ชื่อและวันที่}="${recordPK}"`
             }).all()
             .then((records) => {
@@ -278,18 +331,28 @@ res.status(200); //=ack();
                 records.forEach(item => {
                   console.log(`Found the record, recordID is = ${item.id}`);
                   console.log(item);
+
+                  //add existing record's project into new project message
+                  project = project.concat(item["fields"]["โครงการ"]);
+                  if(project.includes(null) || project.includes(undefined) || project.includes("")) {
+                    project = project.filter(n => n!= null && n!= undefined && n!="");
+                  }                  
+                  console.log(`project = ${project}`);
+
                   //add existing record's workType into new workType message
                   workType = workType.concat(item["fields"]["ประเภทงาน"]);
                   if(workType.includes(null) || workType.includes(undefined) || workType.includes("")) {
                     workType = workType.filter(n => n!= null && n!= undefined && n!="");
                   }                  
                   console.log(`workType = ${workType}`);
+
                   //add existing record's des into new des message
                   des = des.concat(item["fields"]["รายละเอียด"]);
                   if(des.includes(null) || des.includes(undefined) || des.includes("")) {
                     des = des.filter(n => n!= null && n!= undefined && n!="");
                   }
                   console.log(`des = ${des}`);
+
                   resolve(item.id);
                 });
               } 
@@ -397,7 +460,7 @@ res.status(200); //=ack();
       }
       
     }
-
+  
 
 
   }
@@ -409,49 +472,85 @@ res.status(200); //=ack();
 
 //=============================SLASH COMMAND RESPONSE (/BOLT)=============================
 app.post('/slack/commands', async(req, res) => {
-  res.status(200); //=ack();
-//LOG ACTION REQUEST 
+
+  //LOG ACTION REQUEST 
       console.log("---------------/bolt COMMAND REQUEST STARTS HERE---------------");
-      console.log("----------req.body----------");  
-      console.log(req.body); 
-      console.log("----------req.body.context----------");   
-      console.log(req.body.context);       
-      console.log("----------req.body.payload----------");   
-      console.log(req.body.payload);  
+      console.log("----------req.fields(string)----------");  
+      console.log(JSON.stringify(req.fields)); 
       console.log("---------------/bolt COMMAND REQUEST ENDS HERE---------------");       
-  
   //CHECK TEXT COMMAND & RETRIVE TRIGGER_ID
-  const text = req.body.text;
+  const text = req.fields.text;
   console.log("Command text is: " + text);
-  const triggerID = req.body.trigger_id;
-  console.log("triggerID is: " + triggerID);
-  const response_url = req.body.response_url;
+  const trigger_id = req.fields.trigger_id;
+  console.log("trigger_id is: " + trigger_id);
+  const response_url = req.fields.response_url;
   console.log("responseURL is: " + response_url);
-  const token = req.body.token;
+  const token = req.fields.token;
   console.log("Request token is: " + token);
-  const user_id = req.body.user_id;
+  const user_id = req.fields.user_id;
   console.log("user_id is: " + user_id);
+  const channel_id = req.fields.channel_id
+  console.log("channel_id is: " + channel_id);
   
   //if text contains 'mom' => send MOM message
   if (text.includes("mom") || text.includes("Mom") || text.includes("MOM") || text.includes("บันทึกการประชุม")) {
     console.log("==SEND MOM MESSAGE==");
     res.send(msg.momMsg());
-    //console.log(res);
-    //console.log(res.data);
-    //console.log(res.body);
-    /* send modal
-    const result = await modal.openModal(triggerID);
-    console.log("========== OPEN_MODAL RESPONSE.data STARTS ==========");
-    console.log(result.data);   
-    console.log("========== OPEN_MODAL RESPONSE.data ENDS ==========");
-    viewID = result.data.view.id
-    console.log("ViewID in index.js for this modal is " + viewID);
-    */
   }
-  //if text contains 'dr' => send DR message
-  else if (text.includes("dr") || text.includes("DR") || req.body.text.includes("daily report") || req.body.text.includes("Daily Report") || req.body.text.includes("Daily report") || req.body.text.includes("DAILY REPORT")) {
+  //if text contains 'dr' => send DR message + create DR database cache document
+  else if (text.includes("dr") || text.includes("DR") || text.includes("daily report") || text.includes("Daily Report") || text.includes("Daily report") || text.includes("DAILY REPORT")) {
     console.log("==SEND DR MESSAGE==");
-    res.send(msg.drMsg());
+    
+    msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
+    .then(result => {
+      console.log(result.data);
+      return res.sendStatus(204);
+    })
+    .catch(err => {
+      console.error(err);
+    })
+
+    //create cache document in Firestore
+    //const DR_prepopDocPath = `cache/${user_id}/DR/pre-populateURL`;
+    var DRJotUrl = {
+      "head": "https://form.jotform.com/201670438940455",
+      "day": {
+        "input22[month]": "",
+        "input22[day]": "",
+        "input22[year]": ""
+      },
+      "time": {
+        "timeSchedule": "08.00-17.00"
+      },
+      "SE": {
+        "SEName[first]": "",
+        "SEName[last]": "",
+        "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+        "SESlackID": ""
+      },
+      "PM": {
+        "PMName[first]": "",
+        "PMName[last]": "",
+        "PMPosition": "ผู้จัดการโครงการ"
+      },
+      "staff": {
+        "q146_staffTable[0][0]": ""
+      },
+      "dc": {
+        "q39_DCTable[0][0]": ""
+      },
+      "progress100": {
+        "q33_input33[0][0]":""
+      },
+      "misc": {
+        "DRProjectQuery":"",
+        "DRDateQuery":""
+      }
+    };
+
+    const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
+    console.log(DRcache);
+
   }
   //else => send help message
   else {
@@ -459,70 +558,414 @@ app.post('/slack/commands', async(req, res) => {
     res.send(msg.helpMsg());
   }
   
+
 });
-
-
-
 
 
 //=============================ACTION RESPONSE=============================
 app.post('/slack/actions', async(req, res) => {
-  res.status(200); //=ack();
-  //console.log(JSON.parse(req.body.payload));
+  //console.log(JSON.parse(req.fields.payload));
   //LOG ACTION REQUEST 
       console.log("---------------ACTION REQUEST STARTS HERE---------------");
-      console.log("----------req.body----------");  
-      console.log(req.body); 
-      console.log("----------req.body.actions----------");   
-      console.log(req.body.actions);      
-      console.log("----------req.body.context----------");   
-      console.log(req.body.context);       
-      console.log("----------req.body.payload----------");   
-      console.log(req.body.payload);  
+      console.log("----------req.fields----------");  
+      console.log(req.fields); 
+      console.log("----------req.fields.actions----------");   
+      console.log(req.fields.actions);      
+      console.log("----------req.fields.context----------");   
+      console.log(req.fields.context);       
+      console.log("----------req.fields.payload----------");   
+      console.log(req.fields.payload);  
       console.log("---------------ACTION REQUEST ENDS HERE---------------");     
       
+      const {type} = JSON.parse(req.fields.payload)
   
-  const { token, trigger_id, user, actions, type, response_url } = JSON.parse(req.body.payload);
-  const user_id = user.id;  
-  const action_id = actions[0].action_id;
+
+  //-----DR DECLARE VARIABLE-----
+  var DRProjectQuery = "";
+  var DRDateQuery = "";
   
-      console.log({ token, trigger_id, user, actions, type });
+
+
+  
+  //-----RUN-----
+
+  switch(type) {
+    case "block_actions":
+      const { token, trigger_id, user, actions, response_url, container} = JSON.parse(req.fields.payload);
+      const channelID = container.channel_id;
+      const user_id = user.id;  
+      const action_id = actions[0].action_id;
+      // const 
+      // const value = 
+      
+      console.log({ token, user, actions });
+      console.log(`trigger_id = ${trigger_id}`);
       console.log("response_url = " + response_url);
       console.log("action_id = " + action_id);
-      console.log("user_id = "+ user_id);  
-  
-  
-  switch(action_id) {
-  case "deletemessage":
-    // code block
-      console.log("delete message case");
-    //res.status(200); //=ack();
-    res.send(await msg.delMsg(response_url));
+      console.log("user_id = "+ user_id); 
+      console.log(`channelID = ${channelID}`);
+
+
+      switch(action_id) {
+        case "deletemessage":
+          res.status(200);
+          res.write(""); //=ack();
+          // code block
+          console.log("delete message case");
+          //res.status(200); //=ack();
+          let result = await msg.delMsg(response_url);
+          console.log(result.data);
+          res.end();
+        break;
+    
+        case "open_drMsg":
+          res.status(200);
+          res.write(""); //=ack();
+          console.log("open DR message case");
+          // res.status(200); //=ack();
+
+          //create cache for pre-populateURL
+          var DRJotUrl = {
+            "head": "https://form.jotform.com/201670438940455",
+            "day": {
+              "input22[month]": "",
+              "input22[day]": "",
+              "input22[year]": ""
+            },
+            "time": {
+              "timeSchedule": "08.00-17.00"
+            },
+            "SE": {
+              "SEName[first]": "",
+              "SEName[last]": "",
+              "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+              "SESlackID": ""
+            },
+            "PM": {
+              "PMName[first]": "",
+              "PMName[last]": "",
+              "PMPosition": "ผู้จัดการโครงการ"
+            },
+            "staff": {
+              "q146_staffTable[0][0]": ""
+            },
+            "dc": {
+              "q39_DCTable[0][0]": ""
+            },
+            "progress100": {
+              "q33_input33[0][0]":""
+            },
+            "misc": {
+              "DRProjectQuery":"",
+              "DRDateQuery":""
+            }
+          };
+          const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
+          console.log(DRcache);
+
+          //send DR message
+          msg.drMsg(user_id, channelID, trigger_id, process.env.SLACK_BOT_TOKEN)
+          .then(result => {
+            console.log("message posted succesfully!");
+            return res.end();
+          
+          })
+          .catch(err => {
+            console.error(err);
+          })
+        break;
+
+        case "DR_projectList":
+          res.status(200);
+          res.write(""); //=ack();
+
+          let DRProjectData = {
+            "SE": {
+              "SEName[first]": "",
+              "SEName[last]": "",
+              "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+              "SESlackID": ""
+            },
+            "PM": {
+              "PMName[first]": "",
+              "PMName[last]": "",
+              "PMPosition": "ผู้จัดการโครงการ"
+            },
+            "misc": {
+              "DRProjectQuery":"",
+            }
+          };
+
+          DRProjectQuery = actions[0].selected_option.value;
+          console.log(`DRProjectQuery = ${DRProjectQuery}`);
+          DRProjectData.misc.DRProjectQuery = DRProjectQuery;
+
+          DRProjectData.SE.SESlackID = user.id;
+          console.log(`SESlackID = ${DRProjectData.SE.SESlackID}`);
+
+          // get PM's ID
+          let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
+          let PMRecordID = "";
+          if(projectData) {
+            PMRecordID = projectData["ชื่อ PM (จากรายชื่อพนักงาน)"]
+          }
+          //find PM's info (firstname, lastname)
+          let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
+          console.log(`PMinfo = ${JSON.stringify(PMInfo)}`);
+          //store data into object
+          if(PMInfo) {
+            DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+            DRProjectData.PM["PMName[last]"] = PMInfo["ชื่อ-สกุล"].split(" ")[1].trim()
+          }
+
+          //find SE info with SE slackID
+          let SEData = await fn.DR_searchPPfrominfo(baseDR, "รายชื่อพนักงาน", `{Slack USER ID}="${DRProjectData.SE.SESlackID}"`)
+          if(SEData) {
+            DRProjectData.SE["SEName[first]"] = SEData["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+            DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
+          }
+
+          console.log("DRProjectData =");
+          console.log(JSON.stringify(DRProjectData));
+
+          //update to DB
+          const DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
+          console.log(DRcacheUpdate);
+          res.end();
+        break;
+
+        case "DR_date":
+          res.status(200);
+          res.write(""); //=ack();
+
+          let DRDateData = {
+            "day": {
+              "input22[month]": "",
+              "input22[day]": "",
+              "input22[year]": ""
+            },            
+            "misc": {
+              "DRDateQuery":""
+            }
+
+          };
+
+          // res.sendStatus(204); //ack and end
+          DRDateQuery = actions[0].selected_date
+          console.log(`DRDateQuery = ${DRDateQuery}`);
+          DRDateData.misc.DRDateQuery = DRDateQuery;
+
+          //store data into object 
+          DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
+          DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
+          DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
+
+          console.log(`input22[day] = ${DRDateData.day["input22[day]"]}`);
+          console.log(`input22[month] = ${DRDateData.day["input22[month]"]}`);
+          console.log(`input22[year] = ${DRDateData.day["input22[year]"]}`);
+
+          console.log("DRDateData =");
+          console.log(JSON.stringify(DRDateData));
+
+          //Update DB
+          const DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
+          console.log(DRcacheDateUpdate);
+          res.end();
+        break;
+      }
+
+
     break;
-  default:
-    // code block
-}
-  
-  // Modal forms submitted --
-/*      
-  else if(type === 'view_submission') {
-    res.send(''); // Make sure to respond to the server to avoid an error
-    
-    const ts = new Date();
-    const { user, view } = JSON.parse(req.body.payload);
 
-    const data = {
-      timestamp: ts.toLocaleString(),
-      note: view.state.values.note01.content.value,
-      color: view.state.values.note02.color.selected_option.value
-    }
-    
-    appHome.displayHome(user.id, data);
-  }
-});
-*/
+    case "view_submission":
 
-});
+      const payload = JSON.parse(req.fields.payload);
+
+      const metaData = JSON.parse(payload.view.private_metadata);
+      console.log(`metaData = ${JSON.stringify(metaData)}`);
+
+      const viewName = metaData.viewName;
+      console.log(`viewName = ${viewName}`);
+      const channel_id = metaData.channel_id; 
+      console.log(`channel_id = ${channel_id}`);
+      const userSubmitID = payload.user.id;
+      console.log(`userSubmitID = ${userSubmitID}`);
+
+      switch(viewName) {
+        case "DR_prepopInput":
+          console.log("-----case DR_pre-populate URL");
+          let today = new Date();
+
+          //pop-up warning message if 'project' is not selected , OR 'date' is in the future
+          //1. get data from DB => return datafields
+          let data = await fs.DRPrepopURLDocRef(userSubmitID).get().then(documentSnapshot => {
+            let fields = documentSnapshot.data();
+            return fields;
+          })
+          console.log(`data from DB = `);
+          console.log(JSON.stringify(data));
+
+          //2. check the date (if data.misc.DRDateQuery = "" => data.misc.DRDateQuery = date)
+          var date = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
+          let day = dateFormat(date, "yyyy-mm-dd");
+
+          if(!data.misc.DRDateQuery) {
+            data.misc.DRDateQuery = day;
+
+            //store data into object 
+            data.day["input22[year]"] = day.split("-")[0].trim()
+            data.day["input22[month]"] = day.split("-")[1].trim()
+            data.day["input22[day]"] = day.split("-")[2].trim()
+
+            console.log(`input22[day] = ${data.day["input22[day]"]}`);
+            console.log(`input22[month] = ${data.day["input22[month]"]}`);
+            console.log(`input22[year] = ${data.day["input22[year]"]}`);
+
+          }
+
+          //3. check and send message
+          if(!(data.misc.DRProjectQuery) || (new Date(data.misc.DRDateQuery)>today)) {
+            console.log("-----error case, no project chosen ,or date is in the future");
+            res.send(await msg.drErrorMsg(userSubmitID, channel_id))
+            console.log('msg sent!');
+          }
+          else{
+            console.log("input checked! continue");
+              
+            //find other infos
+            //1.get DC & staff data from Airtable
+            const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${day}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
+            if(staffAndDCData) {
+              
+              if(Object.keys(staffAndDCData.staff).length>0) {
+                console.log(`staffData from Airtable = ${JSON.stringify(staffAndDCData.staff)}`);
+                data.staff = staffAndDCData.staff;
+                console.log(`Updated staff data`);
+              }
+              else {
+                console.log("found no staff data = delete data.staff key");
+                delete data.staff;
+              }
+              
+              if(Object.keys(staffAndDCData.dc).length>0) {
+                console.log(`DCData from Airtable = ${JSON.stringify(staffAndDCData.dc)}`);
+                data.dc = staffAndDCData.dc;
+                console.log(`DC data updated`);
+              }
+              else {
+                console.log("found no DC data = delete data.dc key");
+                delete data.dc;
+              }
+              
+            }
+            else{
+              console.log(`No staff or DC data on this day, delete staff and dc keys`);
+              delete data.staff;
+              delete data.dc;
+            }
+            
+            //2.get progress100% (ยังไม่ทำเพราะ base เก็บข้อมูล DR ยังไม่มา)
+            const progressData = undefined;
+            if(progressData) {
+              console.log(`There are preogress 100% from other DR`);
+            }
+            else {
+              console.log(`No progress100% this week, delete progress tree`);
+              delete data.progress100;
+            }
+            
+            //delete unused data
+            delete data.misc;
+            console.log(`finished data = ${JSON.stringify(data)}`)
+            
+            //transform and merge into URL
+            const key = Object.keys(data)
+            console.log(`data keys = ${key}`);
+
+            //concat URL part from every keys except head
+            var URLparam = [];
+            for (var o in data) {
+              console.log(`data key = ${o}`);
+              if(o != "head") {
+                let entries = Object.entries(data[o]);
+                entries = entries.map(n => n.join("=")).join("&");
+                console.log(entries);
+                URLparam = URLparam.concat(entries);
+              }
+              else {
+                console.log(`data keys = head, do nothing`);
+              }
+            }
+            URLparam = URLparam.join("&")
+            console.log(`Finished URLparam = ${URLparam}`);
+
+            //merge URL
+            URL = `${data.head}?${URLparam}`
+            console.log(`URL = ${URL}`);
+
+            //send message through chat.postEphemeral 
+            // const msgText = `:cityscape:  <${URL}|Daily Report JotForm URL>  :cityscape:`
+            /*
+            var message = {
+              "type": "modal",
+              "title": {
+                "type": "plain_text",
+                "text": "Daily Report",
+                "emoji": true
+              },
+              "submit": {
+                "type": "plain_text",
+                "text": "Close",
+                "emoji": true
+              },
+              "close": {
+                "type": "plain_text",
+                "text": "Cancel",
+                "emoji": true
+              },
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "ลิ้งค์สำหรับกรอก Daily Report ค่ะ"
+                  }
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "test"
+                  }
+                }
+              ]
+            }
+            */
+
+            res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, URL))
+            console.log(`Modal link updated!`);
+
+          }
+          
+          break;
+        }
+        
+        break;
+      }
+      
+      
+      
+    });
+
+
+
+
+
+
+
 
 
 

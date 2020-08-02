@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "bolt-hello-world-node",
+  "private_key_id": "3ee5bea630af8112fc3479d8cc53454def6d892c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDj2CzJHlhxlK9i\nzN8FpXvt+jwmNxR9aRjOTPBiK0Dg2Fi5O8Fw15qrR/2005NLpLVbtOfW8tDGJ83T\nRfJaN/Wf/hCMGCJgNNaLo8VRD40aLtdeA9tPwXC814Sl4ByhQ0Sg+yLKfaTo86oJ\ndecwEJlNktw1/31J0AN5cEeOgO9D44tsYalsH7C0/4d/9t6mnJFXhBDcgdjPw0tE\n347WSpykrnyhjJnVp8st7BA7V8OEWeCEoZhtZsRkBnX/t1LmAaFBRBChXXUzDXxQ\nO+s1890CxyqqSaIqZGxHBmlIhc1PV7ECC4+moN0C/fmcDwgRqHa3dFeIyiYCnK2Q\nO7nzMZadAgMBAAECggEAEDNq29Igj9L2tZvDr+8YZM+KP11jQ5eZf/HQleplbpdz\nl5g8JP3vrYYs8BKrQpGvo5m1cn9JgQ2LgR5UIT4hZQL3wj5lE1oudzdp7F2itt3l\nynWTvpQOpB7e+7x3zK+vzZKN4sAUXcwVpx6PFcfYXr+2kNBd5EW6OYRWUjewy67b\n8LQVo8Iqhg4MhUFq9cE7zsTg1PwapMb0mmAk2DAmYSX4v+iReFQVionXNhm+PwR4\nhvq6fyKQSDmMTCNCNXtiwOcyeH1jEijY5PzPu8tH70A6k7wvVn6NcncQrfFQ4ZNt\naB8JCK8PGNc9F7kbloVrMzr0mdfxSWm38zckzK3ZsQKBgQD/cH5CFoy9cmkGyTE+\nH/OMNiFadc6zkRq67UT/kEvb08chFcvpHh8KEktQSWkhMhH4pO5r1SVRfocimgwy\nX/KC8Spp/zgwjLhtZaRHFl/tZAjxlhzvVMIY9AxI4Ljt24uHs0qmiUXKn+Ux45DD\nR5JBCmk6MvSNORobzPjXPyOJawKBgQDkWC3Eg4LInjBmmlGXV5/svSU03tj2K+R6\nS3oUo40BWVgzcxGzFbflcOwGfFFHhqZrh5/Bek/73NOtnmLsLyxUywyAMhWwybcd\nic/bBpTUc+JhSy2g41+/KWrmxw8UeJ1pf0rYbf8DArilf3WEULvNCvmLYePtiIVZ\n5ZdEDxo6FwKBgQDxmVKx62YeYTIZKv4aRloyiZguWTKyAFKJ7pTOK4q0VrAHCPie\netDc08TMIUMAFL2OsWCYOTdcxxHFlnJmyv0zACsfqjdZJB/jyLkCS5VbkLws09B2\nRXJ364wa+gGvZ3GnXdsDfN638Vf0QcrQCMe6IMC6PSu0zwd0t/+8hol0FQKBgDld\nLaJAp4pesyoTeovap4KBwecWVMsDG9LdQz4MGFBOcan7Lmce/aPWSnUWphSh7wz0\ndV3VrGJJh6QGNjO/ZhOnLuzFqE1RX388L8uGS71Tn3txt3TDqjoL3Z88Qr2Rz3nB\nULwuZfILrPdmnc8vuP4505cAcJIrydRbqTSf1qbhAoGBAK+8lr/FLh1uy/4y+t32\nerLKT5sDlTwXTcutwFNyHcdTj67H661YT138aJpPdkLvgygAAL1izUMGr3mjKh/3\nxr+c9yBJpn+PovudVB2l5rrKimYKJDLyjINq9sgMrd0rG1B4ZjdUJxhLs1YtuMJs\nwnOaFcKFKA+JWZwpJ3Fsqalu\n-----END PRIVATE KEY-----\n",
+  "client_email": "glitch-test-mode@bolt-hello-world-node.iam.gserviceaccount.com",
+  "client_id": "109116823850582790483",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/glitch-test-mode%40bolt-hello-world-node.iam.gserviceaccount.com"
+}
