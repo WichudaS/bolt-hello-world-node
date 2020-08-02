@@ -170,6 +170,7 @@ app.post('/slack/events' , async(req, res) => {
   
   
   //If there are event => Do something
+  
   if(req.fields.event) {
     const event = req.fields.event;
     console.log(`event = ${JSON.stringify(event)}`);
@@ -591,8 +592,8 @@ app.post('/slack/actions', async(req, res) => {
 
   switch(type) {
     case "block_actions":
-      const { token, trigger_id, user, actions, response_url, container} = JSON.parse(req.fields.payload);
-      const channelID = container.channel_id;
+      const { token, trigger_id, user, actions, response_url, container, view } = JSON.parse(req.fields.payload);
+      const channelID = container.channel_id || view.private_metadata;
       const user_id = user.id;  
       const action_id = actions[0].action_id;
       // const 
@@ -691,14 +692,12 @@ app.post('/slack/actions', async(req, res) => {
               "PMName[last]": "",
               "PMPosition": "ผู้จัดการโครงการ"
             },
-            "misc": {
-              "DRProjectQuery":"",
-            }
+            "misc.DRProjectQuery": ""
           };
 
           DRProjectQuery = actions[0].selected_option.value;
           console.log(`DRProjectQuery = ${DRProjectQuery}`);
-          DRProjectData.misc.DRProjectQuery = DRProjectQuery;
+          DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
 
           DRProjectData.SE.SESlackID = user.id;
           console.log(`SESlackID = ${DRProjectData.SE.SESlackID}`);
@@ -744,16 +743,13 @@ app.post('/slack/actions', async(req, res) => {
               "input22[day]": "",
               "input22[year]": ""
             },            
-            "misc": {
-              "DRDateQuery":""
-            }
-
+            "misc.DRDateQuery": ""
           };
 
           // res.sendStatus(204); //ack and end
           DRDateQuery = actions[0].selected_date
           console.log(`DRDateQuery = ${DRDateQuery}`);
-          DRDateData.misc.DRDateQuery = DRDateQuery;
+          DRDateData["misc.DRDateQuery"] = DRDateQuery;
 
           //store data into object 
           DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
@@ -810,6 +806,7 @@ app.post('/slack/actions', async(req, res) => {
           let day = dateFormat(date, "yyyy-mm-dd");
 
           if(!data.misc.DRDateQuery) {
+            console.log(`Ther is no date from DB, assign date`);
             data.misc.DRDateQuery = day;
 
             //store data into object 
@@ -834,7 +831,7 @@ app.post('/slack/actions', async(req, res) => {
               
             //find other infos
             //1.get DC & staff data from Airtable
-            const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${day}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
+            const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${data.misc.DRDateQuery}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
             if(staffAndDCData) {
               
               if(Object.keys(staffAndDCData.staff).length>0) {
