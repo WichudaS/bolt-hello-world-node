@@ -62,14 +62,14 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
   }
 };
 
-// app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
-// app.use(bodyParser.json({ verify: rawBodyBuffer }));
-app.use(formidable({
-    encoding: "utf-8",
-    uploadDir: "/my/dir",
-    multiples: true, // req.files to be arrays of files
-    verify: rawBodyBuffer
-  }));
+app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
+app.use(bodyParser.json({ verify: rawBodyBuffer }));
+// app.use(formidable({
+//     encoding: "utf-8",
+//     uploadDir: "/my/dir",
+//     multiples: true, // req.files to be arrays of files
+//     verify: rawBodyBuffer
+//   }));
 
 
 
@@ -84,28 +84,25 @@ var private_metadata = "";
 
 
 //=============================Jotform webhooks====================================
-app.post('/jotform/dr' , async function(req, res) {
+app.post('/jotform/hooks' , async function(req, res) {
   console.log("=================RECEIVED JOTFORM WEBHOOKS===================");
-  res.status(200); // ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
+  res.status(200).send("OK");// ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
 
   //================= Parse JotForm request to JSON ===============================
 
-
-  const fields = JSON.stringify(req.fields);
+  
+  const fields = JSON.stringify(req.body);
   console.log(`req fields are = \n ${fields}`);
-
-  const files = JSON.stringify(req.files);
-  console.log(`req files are = \n ${files}`);
-
-  const raw = req.fields.rawRequest;
+  
+  const raw = req.body.rawRequest;
   console.log(`raw is = \n ${raw}`);
 
   //๋JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
-  const rawreq = JSON.stringify(req.fields.rawRequest);
+  const rawreq = JSON.stringify(req.body.rawRequest);
   console.log(`\n\n\n raw req is = \n ${rawreq}`);
 
 
-  const formID = req.fields.formID;
+  const formID = req.body.formID;
   console.log(`formID is = \n ${formID}`);
 
   var parsed = JSON.parse(raw);
@@ -121,7 +118,6 @@ app.post('/jotform/dr' , async function(req, res) {
     console.log(`${i+1}.${k} = ${parsed[k]}`);
   }
   
-  res.send("Done");
 });
 
 
@@ -133,47 +129,47 @@ app.post('/slack/events' , async(req, res) => {
   res.status(200); //=ack();
   
   //LOG REQUEST===============    
-      console.log("---------------" + req.fields.type +" REQUEST STARTS HERE---------------");
-      console.log("----------req.fields.type----------");   
-      console.log(req);    
-      console.log("----------req.fields----------");   
-      console.log(req.fields);  
-      console.log("----------req.fields.string----------");   
-      console.log(JSON.stringify(req.fields)); 
-      console.log("----------req.fields.context----------");   
-      console.log(req.fields.context);       
-      console.log("----------req.fields.payload----------");   
-      console.log(req.fields.payload);  
-      // console.log("----------req.fields.event----------");   
-      // console.log(req.fields.event);    
-      console.log("---------------" + req.fields.type +" REQUEST ENDS HERE---------------");     
+      console.log("---------------" + req.body.type +" REQUEST STARTS HERE---------------");
+      console.log("----------req.body.type----------");   
+      console.log(req.body.type);    
+      console.log("----------req.body----------");   
+      console.log(req.body);  
+      console.log("----------req.body.string----------");   
+      console.log(JSON.stringify(req.body)); 
+      console.log("----------req.body.context----------");   
+      console.log(req.body.context);       
+      console.log("----------req.body.payload----------");   
+      console.log(req.body.payload);  
+      // console.log("----------req.body.event----------");   
+      // console.log(req.body.event);    
+      console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
   //RESPONSE TO EVENT CASES===============,
-  switch (req.fields.type) {
+  switch (req.body.type) {
     //RESPONSE TO URL VERIFICATION===============  
     case 'url_verification': {
       // verify Events API endpoint by returning challenge if present
-      res.send({ challenge: req.fields.challenge });
+      res.send({ challenge: req.body.challenge });
       break;
     }
     //RESPONSE TO EVENT CALLBACK ===============       
     case 'event_callback': {
-      // Verify the signing secret               >>>>>> !!!!!!! fix THIS later !!!!!!!!
-      // if (!signature.signVerification) {
-      //   res.sendStatus(404);
-      //   return;
-      // } 
-      // //RESPONSE TO message =============== 
-      // else { 
-      // }
+      // Verify the signing secret    
+      if (!signature.isVerified) {
+        res.sendStatus(404);
+        return;
+      } 
+      //RESPONSE TO message =============== 
+      else { 
+      }
       break;
     }
   }
   
   
   //If there are event => Do something
-  
-  if(req.fields.event) {
-    const event = req.fields.event;
+
+  if(req.body.event) {
+    const event = req.body.event;
     console.log(`event = ${JSON.stringify(event)}`);
 
 
@@ -462,11 +458,9 @@ app.post('/slack/events' , async(req, res) => {
       }
       
     }
-  
-
 
   }
-  
+
   res.end();
 });
 
@@ -477,21 +471,21 @@ app.post('/slack/commands', async(req, res) => {
 
   //LOG ACTION REQUEST 
       console.log("---------------/bolt COMMAND REQUEST STARTS HERE---------------");
-      console.log("----------req.fields(string)----------");  
-      console.log(JSON.stringify(req.fields)); 
+      console.log("----------req.body(string)----------");  
+      console.log(JSON.stringify(req.body)); 
       console.log("---------------/bolt COMMAND REQUEST ENDS HERE---------------");       
   //CHECK TEXT COMMAND & RETRIVE TRIGGER_ID
-  const text = req.fields.text;
+  const text = req.body.text;
   console.log("Command text is: " + text);
-  const trigger_id = req.fields.trigger_id;
+  const trigger_id = req.body.trigger_id;
   console.log("trigger_id is: " + trigger_id);
-  const response_url = req.fields.response_url;
+  const response_url = req.body.response_url;
   console.log("responseURL is: " + response_url);
-  const token = req.fields.token;
+  const token = req.body.token;
   console.log("Request token is: " + token);
-  const user_id = req.fields.user_id;
+  const user_id = req.body.user_id;
   console.log("user_id is: " + user_id);
-  const channel_id = req.fields.channel_id
+  const channel_id = req.body.channel_id
   console.log("channel_id is: " + channel_id);
   
   //if text contains 'mom' => send MOM message
@@ -566,20 +560,20 @@ app.post('/slack/commands', async(req, res) => {
 
 //=============================ACTION RESPONSE=============================
 app.post('/slack/actions', async(req, res) => {
-  //console.log(JSON.parse(req.fields.payload));
+  //console.log(JSON.parse(req.body.payload));
   //LOG ACTION REQUEST 
       console.log("---------------ACTION REQUEST STARTS HERE---------------");
-      console.log("----------req.fields----------");  
-      console.log(req.fields); 
-      console.log("----------req.fields.actions----------");   
-      console.log(req.fields.actions);      
-      console.log("----------req.fields.context----------");   
-      console.log(req.fields.context);       
-      console.log("----------req.fields.payload----------");   
-      console.log(req.fields.payload);  
+      console.log("----------req.body----------");  
+      console.log(req.body); 
+      console.log("----------req.body.actions----------");   
+      console.log(req.body.actions);      
+      console.log("----------req.body.context----------");   
+      console.log(req.body.context);       
+      console.log("----------req.body.payload----------");   
+      console.log(req.body.payload);  
       console.log("---------------ACTION REQUEST ENDS HERE---------------");     
       
-      const {type} = JSON.parse(req.fields.payload)
+      const {type} = JSON.parse(req.body.payload)
   
 
   //-----DR DECLARE VARIABLE-----
@@ -593,7 +587,7 @@ app.post('/slack/actions', async(req, res) => {
 
   switch(type) {
     case "block_actions":
-      const { token, trigger_id, user, actions, response_url, container, view } = JSON.parse(req.fields.payload);
+      const { token, trigger_id, user, actions, response_url, container, view } = JSON.parse(req.body.payload);
       const channelID = container.channel_id || view.private_metadata;
       const user_id = user.id;  
       const action_id = actions[0].action_id;
@@ -776,7 +770,7 @@ app.post('/slack/actions', async(req, res) => {
 
     case "view_submission":
 
-      const payload = JSON.parse(req.fields.payload);
+      const payload = JSON.parse(req.body.payload);
 
       const metaData = JSON.parse(payload.view.private_metadata);
       console.log(`metaData = ${JSON.stringify(metaData)}`);
