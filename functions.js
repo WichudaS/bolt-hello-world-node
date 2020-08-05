@@ -27,13 +27,13 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
   }
 };
 
-// app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
-// app.use(bodyParser.json({ verify: rawBodyBuffer }));
-app.use(formidable({
-    encoding: "utf-8",
-    uploadDir: "/my/dir",
-    multiples: true // req.files to be arrays of files
-  }));
+app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
+app.use(bodyParser.json({ verify: rawBodyBuffer }));
+// app.use(formidable({
+//     encoding: "utf-8",
+//     uploadDir: "/my/dir",
+//     multiples: true // req.files to be arrays of files
+//   }));
 
 
 
