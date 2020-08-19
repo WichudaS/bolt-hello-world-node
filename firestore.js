@@ -56,9 +56,13 @@ function DRPrepopURLDocRef(user_id) {
   return db.doc(DBPath);
 }
 
+function DRListDocRef(project, DRno) {
+  let DBPath = `project/${project}/documentStatus/DR/DRList/${DRno}`;
+  return db.doc(DBPath);
+}
 
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {db, DRPrepopURLDocRef};
+module.exports = {db, DRPrepopURLDocRef, DRListDocRef};
 
 
 
