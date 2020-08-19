@@ -56,8 +56,9 @@ const momMsg = () => {
 
 
 //=============================DECLARE 'DR message'==================================
+//-----Pre-populate URL modal------
 const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
-  let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มากรอก Daily Report กันน้าา :heart:`
+  let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มากรอก Daily Report กันนะคะ :heart:`
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopInput"});
   
   
@@ -178,9 +179,8 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
 
 };
 
-
 const drErrorMsg = (user_id, channel_id) => {
-  let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มากรอก Daily Report กันน้าา :heart:`
+  let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มากรอก Daily Report กันนะคะ :heart:`
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopInput"});
   
   
@@ -305,7 +305,6 @@ const drErrorMsg = (user_id, channel_id) => {
 
 };
 
-
 const drPrepopulatedURL = (user_id, channel_id, URL) => {
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopclosed"});
   
@@ -358,6 +357,918 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
 
 
 };
+
+//-----Approve request msg-----
+const drApproveMsg = (DBobj, SLACK_BOT_TOKEN) => {
+  // โครงสร้าง Obj ของ DRList
+  /*
+  let DBobj = {
+    "formID": "201670438940455",
+    "submissionID": formTitle,
+    "number": DRno,
+    "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
+    "status": "รออนุมัติ",
+    "docType": "DR (Daily Report)",
+    "project": parsed["q98_input98"],
+    "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
+    "submitData": {
+      "submitterSlackID": parsed["q210_SESlackID"],
+      "submitDate": `${parsed["q22_input22"]["day"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["year"]}`
+    },
+    "approveData": {
+      "approverSlackID": parsed["q209_PMSlackID"],
+      "approveDate": "",
+      "approveResult": "",
+      "approveComment": ""
+    },
+    "published channel": []    //Set to array type in case there are more than one channel to send
+  };
+  */
+
+  var {name, number, project, docType, submitData, pdfLink, approveData, submissionID } = DBobj;
+
+  let approveURL = `https://www.jotform.com/edit/${submissionID}`
+  console.log(`edit submissionURL = ${approveURL}`);
+
+  let msg = {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "สวัสดีค่ะ รบกวนขออนุมัติเอกสารด้วยค่ะ"
+        }
+      },
+      {
+        "type": "section",
+        "fields": [
+          {
+            "type": "mrkdwn",
+            "text": `*ชื่อเอกสาร:*\n${name}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*หมายเลขเอกสาร:*\n${number}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*โครงการ*\n${project}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*ชนิดเอกสาร:*\n${docType}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*วันที่ขออนุมัติ:*\n${submitData.submitDate}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*ผู้ส่งขออนุมัติ:*\n<@${submitData.submitterSlackID}>`
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*Link เอกสาร:*  <${pdfLink}>`
+        }
+      },
+      {
+        "type": "actions",
+        "block_id": "DR_approveAction",
+        "elements": [
+          {
+            "type": "button",
+            "action_id": "DR_approve",
+            "url": `https://www.jotform.com/edit/${submissionID}`,
+            "text": {
+              "type": "plain_text",
+              "emoji": true,
+              "text": "Approve"
+            },
+            "style": "primary",
+            "value": "approve"
+          },
+          {
+            "type": "button",
+            "action_id": "DR_reject",
+            "text": {
+              "type": "plain_text",
+              "emoji": true,
+              "text": "Reject"
+            },
+            "style": "danger",
+            "value": "reject"
+          }
+        ]
+      }
+    ]
+  };
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "channel": approveData.approverSlackID,
+    "text": "ขออนุมัติเอกสารหน่อยค่ะ :blush:",
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  return args; 
+};
+
+//-----Published msg-----
+const drPublishedMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
+  // โครงสร้าง Obj ของ DRList
+  /*
+  let DBobj = {
+    "name": "PLM-DR-20200805",
+    "formID": "201670438940455",
+    "approveData": {
+        "approverSlackID": "U010E15TBU0",
+        "approveDate": "2020-08-13",
+        "approveComment": "ทดสอบการ commane ของ  PM",
+        "approveResult": "AN"
+    },
+    "publishedChannel": [
+        "C01017F0RM0"
+    ],
+    "submissionID": "4724235956026385529",
+    "project": "PLM",
+    "docType": "DR (Daily Report)",
+    "submitData": {
+        "submitDate": "2020-08-05",
+        "submitterSlackID": "U010E15TBU0"
+    },
+    "GGDFolder": "https://drive.google.com/drive/folders/10d6tlye9bx7lBXJzILdCty_56fyb68o9",
+    "pdfLink": "https://drive.google.com/file/d/1ZPo9mVJmpHQXpGwdRtLI25Yd_sMDRsZU/view?usp=drivesdk",
+    "number": "PLM_DR_0011",
+    "status": "อนุมัติตามบันทึก (AN)"
+  };
+  */
+
+  var { name, formID, approveData, publishedChannel, submissionID, project, docType, submitData, GGDFolder, pdfLink, number, status } = DBobj;
+
+  let statusText = "*สถานะ:*        `"+status+"`"
+  let submitdate = submitData.submitDate.split("-");
+  let approvedate = approveData.approveDate.split("-");
+  let msg ={};
+
+  if (approveData.approveResult == "AP") {
+    msg = {
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ":mega:   ขออนุญาตแจ้งเอกสารใหม่ที่อนุมัติแล้วค่ะ  :page_facing_up::sparkles:"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*ชื่อเอกสาร:*  ${name}`
+          }
+        },
+        {
+          "type": "section",
+          "fields": [
+            {
+              "type": "mrkdwn",
+              "text": `*ชนิด:*                 ${docType}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*หมายเลข:*   ${number}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*โครงการ:*          ${project}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": statusText
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*ขอโดย:*       <@${submitData.submitterSlackID}>`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่อนุมัติ:*       ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*อนุมัติโดย:*  <@${approveData.approverSlackID}>`
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `:ggd: *Link เอกสาร:* \n<${pdfLink}>`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "ขอบคุณค่ะ"
+          }
+          
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "context",
+          "elements": [
+            {
+              "type": "plain_text",
+              "text": "ขอความกรุณา ไม่แก้ไขเอกสารที่ Approve แล้วนะคะ เนื่องจากจะมี Revision ของไฟล์บน GGD และการแจ้งเตือนซ้ำซ้อนซึ่งอาจทำให้สับสนได้",
+              "emoji": true
+            }
+          ]
+        }
+      ]
+    };  
+  }
+  else {
+    msg = {
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ":mega:   ขออนุญาตแจ้งเอกสารใหม่ที่อนุมัติแล้วค่ะ  :page_facing_up::sparkles:"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*ชื่อเอกสาร:*  ${name}`
+          }
+        },
+        {
+          "type": "section",
+          "fields": [
+            {
+              "type": "mrkdwn",
+              "text": `*ชนิด:*                 ${docType}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*หมายเลข:*   ${number}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*โครงการ:*          ${project}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": statusText
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*ขอโดย:*       <@${submitData.submitterSlackID}>`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่อนุมัติ:*       ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*อนุมัติโดย:*  <@${approveData.approverSlackID}>`
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*Comment:*   ${approveData.approveComment}`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `:ggd: *Link เอกสาร:* \n<${pdfLink}>`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "ขอบคุณค่ะ"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "context",
+          "elements": [
+            {
+              "type": "plain_text",
+              "text": "ขอความกรุณา ไม่แก้ไขเอกสารที่ Approve แล้ว เนื่องจากจะมี Revision ของไฟล์บน GGD และการแจ้งเตือนซ้ำซ้อนซึ่งอาจทำให้สับสนได้",
+              "emoji": true
+            }
+          ]
+        }
+      ]
+    };  
+  }
+
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "channel": channel,
+    "text": "มีเอกสารใหม่ที่อนุมัติแล้วค่ะ",
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  return args; 
+};
+
+//-----send AN message notification to SE-----
+const drCommentMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
+  // โครงสร้าง Obj ของ DRList
+  /*
+  let DBobj = {
+    "name": "PLM-DR-20200805",
+    "formID": "201670438940455",
+    "approveData": {
+        "approverSlackID": "U010E15TBU0",
+        "approveDate": "2020-08-13",
+        "approveComment": "ทดสอบการ commane ของ  PM",
+        "approveResult": "AN"
+    },
+    "publishedChannel": [
+        "C01017F0RM0"
+    ],
+    "submissionID": "4724235956026385529",
+    "project": "PLM",
+    "docType": "DR (Daily Report)",
+    "submitData": {
+        "submitDate": "2020-08-05",
+        "submitterSlackID": "U010E15TBU0"
+    },
+    "GGDFolder": "https://drive.google.com/drive/folders/10d6tlye9bx7lBXJzILdCty_56fyb68o9",
+    "pdfLink": "https://drive.google.com/file/d/1ZPo9mVJmpHQXpGwdRtLI25Yd_sMDRsZU/view?usp=drivesdk",
+    "number": "PLM_DR_0011",
+    "status": "อนุมัติตามบันทึก (AN)"
+  };
+  */
+
+  var { name, formID, approveData, publishedChannel, submissionID, project, docType, submitData, GGDFolder, pdfLink, number, status } = DBobj;
+
+  let statusText = "*สถานะ:*        `"+status+"`"
+  let submitdate = submitData.submitDate.split("-");
+  let approvedate = approveData.approveDate.split("-");
+
+  let msg = {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "รบกวนรีวิวคอมเม้นท์เอกสารที่ *_อนุมัติตามบันทึก (AN)_* อีกครั้งค่ะ  :eyes::exclamation: \nเผื่อว่าจะต้องมีการเตรียมข้อมูลเพิ่มเติม"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*ชื่อเอกสาร:*  ${name}`
+        }
+      },
+      {
+        "type": "section",
+        "fields": [
+          {
+            "type": "mrkdwn",
+            "text": `*ชนิด:*                 ${docType}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*หมายเลข:*   ${number}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*โครงการ:*          ${project}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": statusText
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*ขอโดย:*       <@${submitData.submitterSlackID}>`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*วันที่อนุมัติ:*       ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*อนุมัติโดย:*  <@${approveData.approverSlackID}>`
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*Comment:*   ${approveData.approveComment}`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `:ggd: *Link เอกสาร:* \n<${pdfLink}>`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `:ggd: *Folder ที่เก็บเอกสาร:* \n<${GGDFolder}>`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "ขอบคุณค่ะ"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "plain_text",
+            "text": "ขอความกรุณา ไม่แก้ไขเอกสารที่ Approve แล้ว เนื่องจากจะมี Revision ของไฟล์บน GGD และการแจ้งเตือนซ้ำซ้อนซึ่งอาจทำให้สับสนได้",
+            "emoji": true
+          }
+        ]
+      }
+    ]
+  };
+
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "channel": channel,
+    "text": "รบกวนรีวิวคอมเม้นท์เอกสารสถานะ AN ด้วยค่ะ",
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  return args; 
+};
+
+//-----FileUpdate after published notification-----
+const drFileUpdateMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
+  // โครงสร้าง Obj ของ DRList
+  /*
+  let DBobj = {
+    "name": "PLM-DR-20200805",
+    "formID": "201670438940455",
+    "approveData": {
+        "approverSlackID": "U010E15TBU0",
+        "approveDate": "2020-08-13",
+        "approveComment": "ทดสอบการ commane ของ  PM",
+        "approveResult": "AN"
+    },
+    "publishedChannel": [
+        "C01017F0RM0"
+    ],
+    "submissionID": "4724235956026385529",
+    "project": "PLM",
+    "docType": "DR (Daily Report)",
+    "submitData": {
+        "submitDate": "2020-08-05",
+        "submitterSlackID": "U010E15TBU0"
+    },
+    "GGDFolder": "https://drive.google.com/drive/folders/10d6tlye9bx7lBXJzILdCty_56fyb68o9",
+    "pdfLink": "https://drive.google.com/file/d/1ZPo9mVJmpHQXpGwdRtLI25Yd_sMDRsZU/view?usp=drivesdk",
+    "number": "PLM_DR_0011",
+    "status": "อนุมัติตามบันทึก (AN)",
+    "fileUpdated": false
+  };
+  */
+
+  var { name, formID, approveData, publishedChannel, submissionID, project, docType, submitData, GGDFolder, pdfLink, number, status, fileUpdated } = DBobj;
+
+  let statusText = "*สถานะ:*        `"+status+"`"
+  let submitdate = submitData.submitDate.split("-");
+  let approvedate = approveData.approveDate.split("-");
+  let msg ={};
+
+  if (approveData.approveResult == "AP") {
+    msg = {
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ":mega: @channel ขออนุญาตแจ้ง *_เอกสารที่เปลี่ยนแปลงหลังการ publish_* ค่ะ"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*ชื่อเอกสาร:*  ${name}`
+          }
+        },
+        {
+          "type": "section",
+          "fields": [
+            {
+              "type": "mrkdwn",
+              "text": `*ชนิด:*                 ${docType}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*หมายเลข:*   ${number}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*โครงการ:*          ${project}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": statusText
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*ขอโดย:*       <@${submitData.submitterSlackID}>`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่อนุมัติ:*       ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*อนุมัติโดย:*  <@${approveData.approverSlackID}>`
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `:ggd: *Link เอกสารใหม่:* \n<${pdfLink}>`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "ขอบคุณค่ะ"
+          }
+          
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "context",
+          "elements": [
+            {
+              "type": "plain_text",
+              "text": "ขอความกรุณา ไม่แก้ไขเอกสารที่ Approve แล้วนะคะ เนื่องจากจะมี Revision ของไฟล์บน GGD และการแจ้งเตือนซ้ำซ้อนซึ่งอาจทำให้สับสนได้",
+              "emoji": true
+            }
+          ]
+        }
+      ]
+    };  
+  }
+  else {
+    msg = {
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ":mega: @channel ขออนุญาตแจ้ง *_เอกสารที่เปลี่ยนแปลงหลังการ publish_* ค่ะ"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*ชื่อเอกสาร:*  ${name}`
+          }
+        },
+        {
+          "type": "section",
+          "fields": [
+            {
+              "type": "mrkdwn",
+              "text": `*ชนิด:*                 ${docType}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*หมายเลข:*   ${number}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*โครงการ:*          ${project}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": statusText
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*ขอโดย:*       <@${submitData.submitterSlackID}>`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*วันที่อนุมัติ:*       ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+            },
+            {
+              "type": "mrkdwn",
+              "text": `*อนุมัติโดย:*  <@${approveData.approverSlackID}>`
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `*Comment:*   ${approveData.approveComment}`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `:ggd: *Link เอกสาร:* \n<${pdfLink}>`
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "ขอบคุณค่ะ"
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "context",
+          "elements": [
+            {
+              "type": "plain_text",
+              "text": "ขอความกรุณา ไม่แก้ไขเอกสารที่ Approve แล้ว เนื่องจากจะมี Revision ของไฟล์บน GGD และการแจ้งเตือนซ้ำซ้อนซึ่งอาจทำให้สับสนได้",
+              "emoji": true
+            }
+          ]
+        }
+      ]
+    };  
+  }
+
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "channel": channel,
+    "text": "มีเอกสารใหม่ที่อนุมัติแล้วค่ะ",
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  return args; 
+};
+
+//-----Reject comment input modal-----
+const drRejectCommentMsg = (triggerID, SLACK_BOT_TOKEN, metadata) => {
+
+  const msg = {
+    "private_metadata":"",
+    "type": "modal",
+    "submit": {
+      "type": "plain_text",
+      "text": "Submit",
+      "emoji": true
+    },
+    "close": {
+      "type": "plain_text",
+      "text": "Cancel",
+      "emoji": true
+    },
+    "title": {
+      "type": "plain_text",
+      "text": "เหตุผลที่ reject",
+      "emoji": true
+    },
+    "blocks": [
+      {
+        "type": "input",
+        "block_id": "DR_approveAction",
+        "label": {
+          "type": "plain_text",
+          "text": "กรุณากรอกเหตุผลที่ reject",
+          "emoji": true
+        },
+        "element": {
+          "type": "plain_text_input",
+          "action_id": "DR_rejectComment",
+          "multiline": true
+        }
+      }
+    ]
+  };
+
+  if(metadata) {
+    msg.private_metadata = JSON.stringify(metadata);
+  }
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "trigger_id": triggerID,
+    "view": JSON.stringify(msg)
+  };
+  
+  // console.log(`args = ${JSON.stringify(args)}`);
+
+  return args;
+};
+
+
+//-----Send 'reject' message to submitter-----
+const drRejectMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
+  // โครงสร้าง Obj ของ DRList
+  /*
+  let DBobj = {
+    "name": "PLM-DR-20200805",
+    "formID": "201670438940455",
+    "approveData": {
+        "approverSlackID": "U010E15TBU0",
+        "approveDate": "2020-08-13",
+        "approveComment": "ทดสอบการ commane ของ  PM",
+        "approveResult": "AN"
+    },
+    "publishedChannel": [
+        "C01017F0RM0"
+    ],
+    "submissionID": "4724235956026385529",
+    "project": "PLM",
+    "docType": "DR (Daily Report)",
+    "submitData": {
+        "submitDate": "2020-08-05",
+        "submitterSlackID": "U010E15TBU0"
+    },
+    "GGDFolder": "https://drive.google.com/drive/folders/10d6tlye9bx7lBXJzILdCty_56fyb68o9",
+    "pdfLink": "https://drive.google.com/file/d/1ZPo9mVJmpHQXpGwdRtLI25Yd_sMDRsZU/view?usp=drivesdk",
+    "number": "PLM_DR_0011",
+    "status": "อนุมัติตามบันทึก (AN)"
+  };
+  */
+
+  var { name, formID, approveData, publishedChannel, submissionID, project, docType, submitData, GGDFolder, pdfLink, number, status } = DBobj;
+
+  let statusText = "*สถานะ:*         `"+status+"`"
+  let submitdate = submitData.submitDate.split("-");
+  let approvedate = approveData.approveDate.split("-");
+
+  let msg = {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "รบกวนแก้ไขเอกสารที่ *_ไม่อนุมัติ (RE)_* อีกครั้งค่ะ  :eyes::exclamation:"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*ชื่อเอกสาร:*  ${name}`
+        }
+      },
+      {
+        "type": "section",
+        "fields": [
+          {
+            "type": "mrkdwn",
+            "text": `*ชนิด:*                 ${docType}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*หมายเลข:*    ${number}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*โครงการ:*          ${project}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": statusText
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*วันที่ขออนุมัติ:*  ${submitdate[2]}-${submitdate[1]}-${submitdate[0]}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*ขอโดย:*        <@${submitData.submitterSlackID}>`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*วันที่ตอบกลับ:*  ${approvedate[2]}-${approvedate[1]}-${approvedate[0]}`
+          },
+          {
+            "type": "mrkdwn",
+            "text": `*ปฏิเสธโดย:*  <@${approveData.approverSlackID}>`
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*เหตุผลที่ไม่อนุมัติ:*   ${approveData.approveComment}`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `:jotform: *Link สำหรับแก้ไขเอกสาร:* \n<https://www.jotform.com/edit/${submissionID}>`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "ขอบคุณค่ะ"
+        }
+      }
+    ]
+  };
+
+
+  const args = {
+    "token": SLACK_BOT_TOKEN,
+    "channel": channel,
+    "text": "รบกวนแก้ไขเอกสารสถานะ RE ด้วยค่ะ",
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  return args; 
+};
+
 
 //=============================DECLARE obj 'help message'=============================
 const helpMsg = () => {
@@ -467,7 +1378,7 @@ function delMsg(response_url) {
     "delete_original": "true"
     };
 	const result = axios.post(response_url, msg);
-	return result;
+	return result.data;
 };
 
 //(ALSO TYPICAL METHOD WORKS, TOO!)
@@ -506,5 +1417,6 @@ function sendEphemeralMsg(user_id, channel_id, msg, SLACK_BOT_TOKEN) {
 
 
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {helpMsg, delMsg, updateMsg, momMsg, drMsg, drErrorMsg, sendEphemeralMsg, drPrepopulatedURL};
+module.exports = { helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg,
+                  drMsg, drErrorMsg, drPrepopulatedURL, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg};
 

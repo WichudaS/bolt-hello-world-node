@@ -311,5 +311,9 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
   });
 };
 
+
+function DR_CreateNewAirtableRecord() {
+  
+};
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {IsNotEmpty, DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula};
+module.exports = {IsNotEmpty, DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula};
