@@ -411,7 +411,7 @@ app.post('/integromat/hooks', async function(req,res) {
 
 
 //=============================EVENT RESPONSE=============================
-//Uncomment below line to Stop slack from event running 
+//Uncomment this line below to Stop slack from event running 
 // app.get('/event' , async(req, res) => {  
 app.post('/slack/events' , async(req, res) => {
   res.status(200); 
@@ -460,26 +460,26 @@ app.post('/slack/events' , async(req, res) => {
     const event = req.body.event;
     console.log(`★ event = ${JSON.stringify(event)}`);
 
-
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable'
-    
     if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
       console.log("★ CASE: Save jibble message to Airtable");
-      res.sendStatus(204);  
+      res.sendStatus(204);
       //===DECLARE VAR====
-      
+
+
+  // *UPDATE* แก้ format ชื่อ
       var name = [];
-      name = name.concat(event.text.split("*").splice(0,1).reduce((n) => n).trim());
+      name = name.concat(event.text.split("*").splice(0,1).reduce((n) => n).replace("DC" , "").trim());
       console.log(`★ name = ${name}`);
       var project = [];
       var workType = [];
       var des = [];
       var imgURL = "";
-  
+
       if(event.attachments) {
         for (var i of event.attachments) {
           console.log("★ i = " + JSON.stringify(i));
-          if (Object.keys(i).includes("text")) {          
+          if (Object.keys(i).includes("text")) {
             try{
               var projectAndWork = i.text.split("*").splice(1,1).toString().split("_");
               if(projectAndWork.length > 1 ) {
@@ -495,16 +495,16 @@ app.post('/slack/events' , async(req, res) => {
                 des = des.filter(n => n!= null && n!= undefined && n!="");
               }
             }
-            catch (err) {console.log(err); 
+            catch (err) {console.log(err);
             };
             console.log(`★ project = ${project}`);
             console.log(`★ workType = ${workType}`);
             console.log(`★ des = ${des}`);
-          } 
+          }
           else if (Object.keys(i).includes("image_url")) {
             imgURL = i.image_url;
             console.log(`★ imgURL = ${imgURL}`);
-          } 
+          }
           else {
             console.log(`★ project = ${project}`);
             console.log(`★ workType = ${workType}`);
@@ -513,76 +513,63 @@ app.post('/slack/events' , async(req, res) => {
           }
         }
       }
-  
+
       // var dateTime = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
       var dateTime = new Date(new Date().toLocaleString());
       console.log(`★ dateTime = ${dateTime}`);
-  
+
       var day = dateFormat(dateTime, "dd/mm/yyyy");
       console.log(`★ day = ${day}`);
-      
+
       const recordPK = `${name} - ${day}`;
       recordPK.toString();
       console.log(`★ recordPK = ${recordPK}`);
-  
-  
+
+
       //===DECLARE FUNCTION===
-  
+  // *UPDATE* แยกเป็น staff กับ คนงาน
         //Airtable Layout
       function JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL) {
-        console.log("=====Jibble layout=====");
+        console.log("=====Jibbled in layout=====");
         return new Promise((resolve, reject) => {
-  
+
           if (event.text.includes("jibbled")) {
-            if (event.text.includes("jibbled in") && !(recordID) ) {
-              let layout = {
-                "fields": {
-                  "ชื่อพนักงาน": name,
-                  "เวลาเข้างาน (First In)": dateTime,
-                  "โครงการ": project,
-                  "ประเภทงาน": workType,
-                  "รายละเอียด": des,
-                  "วันที่": day
+            if (event.text.includes("jibbled in")) {
+              let layout = {};
+              if(workType.includes("DC")) {
+                layout = {
+                  "fields": {
+                    "ชื่อคนงาน": name,
+                    "เวลาเข้างาน (First In)": dateTime,
+                    "โครงการ": project,
+                    "ประเภทงาน": workType,
+                    "รายละเอียด": des,
+                    "วันที่": day
+                  }
                 }
               }
-              
+              else {
+                layout = {
+                  "fields": {
+                    "ชื่อพนักงาน": name,
+                    "เวลาเข้างาน (First In)": dateTime,
+                    "โครงการ": project,
+                    "ประเภทงาน": workType,
+                    "รายละเอียด": des,
+                    "วันที่": day
+                  }
+                }
+              }
+
+
+
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
-  
+
               console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
-            if (event.text.includes("jibbled in") && (recordID) ) {
-              let layout = {
-                "id": recordID,
-                "fields": {
-                  "โครงการ": project,
-                  "ประเภทงาน": workType,
-                  "รายละเอียด": des
-                }
-              }
-  
-              let layoutArray = [];
-              layoutArray = layoutArray.concat(layout);
-  
-              console.log(JSON.stringify(layoutArray));
-              resolve(layoutArray);
-            }
-            if (event.text.includes("jibbled out") && (recordID) ) {
-              let layout = {
-                "id": recordID,
-                "fields": {
-                  "เวลาออกงาน (Last Out)": dateTime
-                }
-              }
-  
-              let layoutArray = [];
-              layoutArray = layoutArray.concat(layout);
-  
-              console.log(JSON.stringify(layoutArray));
-              resolve(layoutArray);
-            }
-  
+
           } else {
             reject();
           }
@@ -590,7 +577,7 @@ app.post('/slack/events' , async(req, res) => {
           console.log(err);
         });
       }
-  
+
       //Search for Airtable record
       function RetrieveID(base, tableName, recordPK) {
         console.log("=====Retrieve record=====");
@@ -598,7 +585,7 @@ app.post('/slack/events' , async(req, res) => {
         console.log(`★ recordPK = ${recordPK}`);
         // console.log(`base = ${base}`);
         console.log(`★ filerformula = {ชื่อและวันที่}="${recordPK}"` );
-        
+
         return new Promise((resolve, reject) => {
           if (recordPK) {
             console.log(`case recordPK`);
@@ -607,44 +594,25 @@ app.post('/slack/events' , async(req, res) => {
             .select({
               maxRecords: 1,
               view: "Grid view",
-              fields: ["ชื่อและวันที่","ชื่อพนักงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด","โครงการ"],
-              filterByFormula: `{ชื่อและวันที่}="${recordPK}"`
+              fields: ["ชื่อและวันที่","ชื่อพนักงาน","ชื่อคนงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด","โครงการ"],
+              filterByFormula: `AND( {ชื่อและวันที่}="${recordPK}" , {เวลาออกงาน (Last Out)}=BLANK() )` ,
+              sort: [{field: "เวลาเข้างาน (First In)", direction: "desc"}]
             }).all()
             .then((records) => {
               console.log(`★ case successful`);
-              console.log(records);
+              // console.log(records);
               if(records.length>0) {
                 records.forEach(item => {
-                  console.log(`★ Found the record, recordID is = ${item.id}`);
-                  console.log(item);
-
-                  //add existing record's project into new project message
-                  project = project.concat(item["fields"]["โครงการ"]);
-                  if(project.includes(null) || project.includes(undefined) || project.includes("")) {
-                    project = project.filter(n => n!= null && n!= undefined && n!="");
-                  }                  
-                  console.log(`★ project = ${project}`);
-
-                  //add existing record's workType into new workType message
-                  workType = workType.concat(item["fields"]["ประเภทงาน"]);
-                  if(workType.includes(null) || workType.includes(undefined) || workType.includes("")) {
-                    workType = workType.filter(n => n!= null && n!= undefined && n!="");
-                  }                  
-                  console.log(`★ workType = ${workType}`);
-
-                  //add existing record's des into new des message
-                  des = des.concat(item["fields"]["รายละเอียด"]);
-                  if(des.includes(null) || des.includes(undefined) || des.includes("")) {
-                    des = des.filter(n => n!= null && n!= undefined && n!="");
-                  }
-                  console.log(`★ des = ${des}`);
+                  console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
+                  console.log(`★ The recordID is = ${item.id}`);
+                  // console.log(item);
 
                   resolve(item.id);
                 });
-              } 
+              }
               else {
-                console.log(`★ error case, recordID = ""`); 
-                recordID = ""; 
+                console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
+                recordID = "";
                 resolve(recordID);
               }
             });
@@ -657,16 +625,17 @@ app.post('/slack/events' , async(req, res) => {
           recordID="";
         });
       }
-  
-  
+
+
       //Create new record
       function RecordCreate(base, tableName, dataGroup) {
         console.log("=====Create new record=====");
         //test OK!
         console.log("★ dataGroup = ");
         console.log(dataGroup);
-  
+
         return new Promise((resolve, reject) => {
+          let outputText = "";
           if (dataGroup) {
             var allRecord = [];
             base(tableName).create(dataGroup, { typecast: true }, function(err,records) {
@@ -676,11 +645,11 @@ app.post('/slack/events' , async(req, res) => {
               }
               records.forEach(function(record) {
                 allRecord = allRecord.concat(record);
-                console.log(`★ record ID ${record.id} from ${tableName} is CREATED!`);
+                outputText = `★ record ID ${record.id} from ${tableName} is CREATED!`;
               });
-              console.log("★ allRecord = ");
-              console.log(allRecord);
-              resolve(allRecord);
+              // console.log("★ allRecord = ");
+              // console.log(allRecord);
+              resolve(outputText);
             });
           } else {
             reject();
@@ -689,14 +658,14 @@ app.post('/slack/events' , async(req, res) => {
           console.log(err);
         });
       }
-  
+
       //Update extisting record
       function RecordUpdate(base, tableName, dataGroup) {
         console.log("=====Update existing record=====");
         //test OK!
         console.log("★ dataGroup = ");
         console.log(JSON.stringify(dataGroup));
-  
+
         return new Promise((resolve, reject) => {
           let text = "";
           if (dataGroup) {
@@ -720,36 +689,52 @@ app.post('/slack/events' , async(req, res) => {
           console.log(err);
         });
       }
-  
-  
-  
+
+
+
       //===RUN===
-    
+
       var baseID = "appAThxvZSRLzrXta"; //Jibble Datastore
       console.log(`★ baseID = ${baseID}`);
-  
-      var tableName = "บันทึกเวลาเข้าออก"; 
+
+      var tableName = "บันทึกเวลาเข้าออก";
       console.log(`★ tableName = ${tableName}`);
-  
+
       var recordID = await RetrieveID(baseDR, tableName, recordPK);
       console.log(`★ recordID = ${recordID}`);
-      var dataGroup = await JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL);
-      console.log(`★ dataGroup = ${dataGroup}`);
-  
-      if (recordID) {
-        var updateRecord = await RecordUpdate(baseDR, tableName, dataGroup);
+
+      // Jibbled out the existing record
+      if(recordID) {
+        console.log(`★ There is an existing record that hasn't Jibbled out yet, Jibble out this record`);
+        let jibOutData = [{
+          "id": recordID,
+          "fields": {
+            "เวลาออกงาน (Last Out)": dateTime
+          }
+        }];
+        let updateRecord = await RecordUpdate(baseDR, tableName, jibOutData);
         console.log(updateRecord);
       }
-      else {
+
+      // Check if it's Jibbled in or out
+      // Jibbled in case, create new record
+      if(event.text.includes("*jibbled in*")) {
+        // create new record
+        var dataGroup = await JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL);
+        console.log(`★ dataGroup =`);
+        console.log(dataGroup);
+        
         var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
         console.log(createRecord);
       }
-      
+
+
     }
-    
+
   }
 
   res.end();
+
 });
 
 
@@ -1236,48 +1221,7 @@ app.post('/slack/actions', async(req, res) => {
             console.log(`★ URL = ${URL}`);
 
             //send message through chat.postEphemeral 
-            // const msgText = `:cityscape:  <${URL}|Daily Report JotForm URL>  :cityscape:`
-            /*
-            var message = {
-              "type": "modal",
-              "title": {
-                "type": "plain_text",
-                "text": "Daily Report",
-                "emoji": true
-              },
-              "submit": {
-                "type": "plain_text",
-                "text": "Close",
-                "emoji": true
-              },
-              "close": {
-                "type": "plain_text",
-                "text": "Cancel",
-                "emoji": true
-              },
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "ลิ้งค์สำหรับกรอก Daily Report ค่ะ"
-                  }
-                },
-                {
-                  "type": "divider"
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "test"
-                  }
-                }
-              ]
-            }
-            */
-
-            res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, URL))
+             res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, URL))
             console.log(`★ Modal link updated!`);
 
           }

@@ -136,7 +136,7 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
       console.log(`start querying`);
       //retrive records
       base(tableName).select({
-        maxRecords: 50,
+        maxRecords: 100,
         filterByFormula: filterFormula,
         view:"Sort by date and position"
       })
