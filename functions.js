@@ -55,6 +55,102 @@ function IsNotEmpty(value) {
 
 
 
+//===================UNIVERSAL AIRTABLE FUNCTION===================
+
+//create Airtable record(s) with output '{refField : recordID}'
+//*'data' must be an ARRAY, typecast must be boolean
+function AT_createRecordsWithRecIDOutput(base, table, data, typecast, refField) { 
+  let output = {};
+  
+  return new Promise((resolve, reject) => {
+      if(base && table && data) {
+
+          base(table).create(data , {typecast: typecast}, function(err, records) {
+              if (err) {
+              console.log(`★ Couldn't create record(s), here is an error log...`)
+              console.error(err);
+              reject();
+              }
+              
+              records.forEach(function(record) { 
+                output[`${record["fields"][refField]}`] = record.id 
+              })
+              resolve(output);
+          })
+      }
+      else {
+          console.log(`★ Missing some inputs, can't create records, return nothing`)
+          reject();
+      }
+  }).catch(err => {
+        console.log(err);
+  });
+}
+
+//Query Airtable record(s) with output '{refField : recordID}'
+//*'data' must be an Object with keys according to Airtable's API
+function AT_listATRecordsWithRecIDOutput(base, table, data, refField) {
+  let output = {};
+
+  return new Promise((resolve, reject) => {
+    if (base && table && data) {
+      console.log(`start querying`);
+      //retrive PM's ID
+      base(table).select(data)
+      .all()
+      .then((records) => {
+        console.log(`find process successful`);
+        console.log(`number of record(s) = ${records.length}`);
+        
+        if(records.length>0) {
+          records.forEach(function(record) { output[`${record["fields"][refField]}`] = record.id })
+            resolve(output);
+        } 
+        else {
+          console.log(`found nothing, return blank`);
+          resolve();
+        } 
+      });  
+    }
+  })
+  .catch(err => {
+  console.error(err);
+  });
+};
+
+//query Airtable record(s) with FULL OBJECT output '{record}'
+function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
+  let output = {};
+
+  return new Promise((resolve, reject) => {
+    if (base && table && data) {
+      console.log(`start querying`);
+      //retrive PM's ID
+      base(table).select(data)
+      .all()
+      .then((records) => {
+        console.log(`find process successful`);
+        console.log(`number of record(s) = ${records.length}`);
+        
+        if(records.length>0) {
+          records.forEach(function(record) { output[`${record.id}`] = record["fields"] })
+          resolve(output);
+        } 
+        else {
+          console.log(`found nothing, return blank`);
+          resolve();
+        } 
+      });  
+    }
+  })
+  .catch(err => {
+    console.error(err);
+  });
+};
+
+
+
+
 
 
 //====================DR functions==========================================
@@ -229,9 +325,6 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
   });
 };
 
-
-
-
 function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
   console.log("getDCRecordsByFormula => list all records that match the criteria");
   // console.log(`base = ${base}`);    //output =very long object 
@@ -311,9 +404,5 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
   });
 };
 
-
-function DR_CreateNewAirtableRecord() {
-  
-};
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {IsNotEmpty, DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula};
+module.exports = {IsNotEmpty, AT_createRecordsWithRecIDOutput, AT_listATRecordsWithRecIDOutput, AT_listATRecordsWithFULLOBJOutput, DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula};
