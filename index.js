@@ -94,14 +94,14 @@ app.post('/jotform/hooks' , async function(req, res) {
 
   
   const body = JSON.stringify(req.body);
-  console.log(`★ req.body are = \n ${body}`);
+  // console.log(`★ req.body is = \n ${body}`);
   
   const raw = req.body.rawRequest;
   console.log(`★ raw is = \n ${raw}`);
 
   // JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
   const rawreq = JSON.stringify(req.body.rawRequest);
-  console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
+  // console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
 
   const formID = req.body.formID;
   console.log(`★ formID is = \n ${formID}`);
@@ -222,11 +222,271 @@ app.post('/jotform/hooks' , async function(req, res) {
         console.log(postResult.data);
       }
       else {
-        // PM Signed => 1. Send Published message to selected channel 2.Update DB/GGD/Airtable 
-        console.log("★ PM signed, upload file to GGD& Airtable");
+        // PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks' 
+        console.log(`★ PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'`);
+      
         
 
-        console.log("★ send webhooks to Integromat to upload files to GGD");
+        //1.Save Jotform data to Airtable (create DR records)
+        console.log(`★ 1. Save Jotform data to Airtable (create DR records)`);
+
+        var DRdataToAirtable = {
+          "Daily Report" : [
+            {
+              "fields" : {
+                "รหัสเอกสาร" : parsed.q116_uniqueId,
+                "วันที่" : `${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
+                "รายละเอียดงาน" : [], //waiting for recordIDs
+                "รายละเอียดพนักงาน" : [],  //waiting for recordIDs
+                "รายละเอียดเครื่องจักร" : [],  //waiting for recordIDs
+                "อุปสรรค" : parsed["q203_input203"][0][0],
+                "อุบัติเหตุ" : parsed["q203_input203"][0][1],
+                "ความคิดเห็นเพิ่มเติม" : parsed["q204_input204"][0][0],
+                "แปลนแสดงรายละเอียดการทำงาน" : [],
+                "รูปถ่ายประจำวัน" : [],
+                "สภาพอากาศ" : [],  //waiting for recordIDs
+                "PDF Report":[
+                  {
+                      "filename": `${parsed.q116_uniqueId}-${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
+                      "url": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`
+                  }
+                  ],  
+              }
+            }
+          ],
+          "รายละเอียดการทำงาน" : [],
+          "รายละเอียดพนักงาน" : [],
+          "รายละเอียดคนงาน DC" : [],
+          "รายละเอียดคนงาน SUB" : [],
+          "รายละเอียดเครื่องจักร" : [],
+          "ตารางสภาพอากาศ (WR.)" : [],
+        };
+        
+        //rearrange some data structure and create record in Airtable
+        //'Daily Report' table
+        //add site plans
+        if(parsed.Pdf) {
+          for (var i of parsed.Pdf) {
+            DRdataToAirtable["Daily Report"][0]["fields"]["แปลนแสดงรายละเอียดการทำงาน"] = DRdataToAirtable["Daily Report"][0]["fields"]["แปลนแสดงรายละเอียดการทำงาน"].concat({
+              "url" : i
+            })
+          }
+        } 
+        //add site pics
+        if(parsed["input92"]) {
+          for (var j of parsed["input92"]) {
+            DRdataToAirtable["Daily Report"][0]["fields"]["รูปถ่ายประจำวัน"] = DRdataToAirtable["Daily Report"][0]["fields"]["รูปถ่ายประจำวัน"].concat({
+              "url" : j
+            })
+          }
+        } 
+        //create record in "Daily Report" table
+        const DRrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "Daily Report", DRdataToAirtable["Daily Report"], true, "รหัสเอกสาร");
+        console.log(`★ "Daily Report" record created = ${JSON.stringify(DRrec)}`);
+
+
+        //add work progress
+        if(parsed["q33_input33"]) {
+          for(var i of parsed["q33_input33"]) {
+            if(i[2]) { //if there is some data about work
+              DRdataToAirtable["รายละเอียดการทำงาน"] = DRdataToAirtable["รายละเอียดการทำงาน"].concat(
+                {
+                  "fields" : {
+                    "รายละเอียดงาน" : i[2],
+                    "ชื่อคนทำงาน (DC)" : [],  //will be filled when create 'DC' records
+                    "ชุดช่างที่ทำงาน (SUB)" : [],  //will be filled when create 'SUB' records
+                    "บริเวณที่ทำงาน" : i[3],
+                    "ปริมาณงาน" : i[4],
+                    "หน่วย" : i[5],
+                    "%(คิดจากการจบงานตาม ELEMENTAL CODE )" : i[6],
+                    "ELEMENTAL CODE" : i[0],
+                    "WORK SECTION CODE" : i[1],
+                    "Daily Report" : Object.values(DRrec)
+                  }
+                }
+              )
+            }
+          }
+        }
+        //create record in "รายละเอียดการทำงาน" table
+        const workRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดการทำงาน", DRdataToAirtable["รายละเอียดการทำงาน"], true, "รายละเอียดงาน");
+        console.log(`★ "รายละเอียดการทำงาน" record created = ${JSON.stringify(workRec)}`);
+
+
+        //get DC manpower list from Airtable
+        var DCmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER DC", {"fields":["Description","Keywords"]} , "Keywords")
+        console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
+        //add DC data 
+        if(parsed["q39_DCTable"]) {
+          for(var i of parsed["q39_DCTable"]) {
+            if(i[0]) {
+
+              let work = Object.keys(workRec).filter((n) => { return n.search(i[1].trim()) != -1 });   //return ARRAY
+              // console.log(`★ DCwork = ${work}`);
+              let DCposition = Object.keys(DCmanpower).filter((m) => { return m.search(i[1].trim()) != -1 });   //return ARRAY
+              // console.log(`★ DCposition = ${DCposition}`);
+
+              DRdataToAirtable["รายละเอียดคนงาน DC"] = DRdataToAirtable["รายละเอียดคนงาน DC"].concat(
+                {
+                  "fields" : {
+                    "ชื่อ-สกุล" : i[0].trim(),
+                    "รายละเอียดการทำงาน" : work.length > 0 ? Object.values(work) : [] ,  //waiting for recordIDs
+                    "DT" : i[2].trim(),
+                    "OT" : i[3].trim(),
+                    "Daily Report" : Object.values(DRrec),
+                    "MANPOWER DES" : DCposition.length > 0 ? DCmanpower[DCposition[0]] : DCmanpower["คนงาน DC"],  //waiting for recordIDs
+                    "Error" : work.length==0 && DCposition.length==0 ? `ERROR! มีการใส่ข้อมูลงานหรือชื่อตำแหน่งผิด: ข้อมูลงานที่ทำจาก Jotform=${i[1]}` : ""
+                  }
+                }
+              )
+            }
+          }
+        }
+        //create DC records
+        const DCRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน DC", DRdataToAirtable["รายละเอียดคนงาน DC"], true, "ชื่อ-สกุล");
+        console.log(`★ "รายละเอียดคนงาน DC" record created = ${JSON.stringify(DCRec)}`);
+
+
+        //add subcontract data
+        if(parsed["q186_Subcontractor"]) {
+          for( var i of parsed["q186_Subcontractor"]) {
+            if(i[0] && i[1]) {
+
+              //query another base to find SUB data that matches
+              let queryData = {
+                "fields" : ["ชื่อชุดช่าง", "ชื่อย่อโครงการ (from โครงการ)","DES. ใน Manpower"],
+                "filterByFormula" : `AND( {ชื่อชุดช่าง}="${i[1]}",{ชื่อย่อโครงการ (from โครงการ)}="${parsed["q98_input98"]}")`
+              };
+              let SUBmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseDR, "ชุดช่าง", queryData, "DES. ใน Manpower");  //return OBJECT
+              // console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
+
+
+              let work = Object.keys(workRec).filter((n) => { return n.search(i[0].trim()) != -1 });   //return ARRAY
+              // console.log(`★ SUBwork = ${work}`);
+
+              let errorLog = [];
+              if(work.length==0 || Object.keys(SUBmanpower).length!=1) {
+                if(work.length==0) {
+                  errorLog = errorLog.concat(`รายละเอียดงานไม่ตรงกับตาราง, รายละเอียดงานที่กรอกมา = ${i[0]}`);
+                }
+                if(Object.keys(SUBmanpower).length==0) {
+                  errorLog = errorLog.concat("ไม่มีรายชื่อผรม.นี้ในฐานข้อมูลโครงการ ให้เป็นค่าเริ่มต้น = 'ผรม. งานอื่นๆ'")
+                }
+                if(Object.keys(SUBmanpower).length>1) {
+                  errorLog = errorLog.concat(`มีชื่อผรม.นี้ซ้ำกันในฐานข้อมูล เลือกใช้หมวด Manpower ของรายการแรกที่หาได้ = ${[Object.keys(SUBmanpower)[0]]}`)
+                }
+              }
+
+
+              DRdataToAirtable["รายละเอียดคนงาน SUB"] = DRdataToAirtable["รายละเอียดคนงาน SUB"].concat(
+                {
+                  "fields" : {
+                    "ชุดช่าง" : i[1],
+                    "รายละเอียดการทำงาน" : work.length > 0 ? Object.values(work) : [],  //waiting for recordIDs
+                    "จำนวนคนงาน" : i[2],
+                    "DT" : i[3], 
+                    "OT" : i[4] ? i[4] : 0,
+                    "MANPOWER SUB" : Object.keys(SUBmanpower).length>0 ? [Object.keys(SUBmanpower)[0]] : ["ผรม. งานอื่นๆ"],  //waiting for recordIDs     
+                    "Daily Report" : Object.values(DRrec),
+                    "Error" : errorLog.length>0 ? errorLog.join(" และ ") : ""
+                  }
+                }
+                )
+            }
+          }
+        }
+        //create SUB records
+        const SUBRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน SUB", DRdataToAirtable["รายละเอียดคนงาน SUB"], true, "ชุดช่าง");
+        console.log(`★ "รายละเอียดคนงาน SUB" record created = ${JSON.stringify(SUBRec)}`);
+        
+        
+        //Query staffManpower keyword list
+        let staffManpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER พนักงาน", {"fields":["Description","Keywords"]} , "Keywords")   //return {"keywords" : "recordID"}
+        console.log(`★ Staff manpower keywords list from Airtable = ${JSON.stringify(staffManpower)}`);
+        //add staff data
+        if(parsed["q146_staffTable"]) {
+          for(var i of parsed["q146_staffTable"]) {
+            if(i[0] && i[1]) {
+
+              let staffPosition = Object.keys(staffManpower).filter((m) => { return m.search(i[0].trim()) != -1 });   //return ["keyword"]
+              console.log(`★ staffPosition = ${staffPosition}`);
+
+              let errorLog = [];
+              staffPosition.length == 0 ? errorLog = [...errorLog, "ตำแหน่งนี้ไม่อยู่ในรายการ Manpower ใด  ให้ใช้ค่าเริ่มต้น = 'อื่นๆ'"] : ""
+              staffPosition.length >1 ? errorLog = [...errorLog, `มีตำแหน่งนี้ในรายการ Manpower มากกว่า 1 รายการ เลือกใช้ชื่อ manpower แรกที่พบ = ${staffPosition[0]}`] : ""
+              DRdataToAirtable["รายละเอียดพนักงาน"] = DRdataToAirtable["รายละเอียดพนักงาน"].concat(
+                {
+                  "fields" : {
+                    "ชื่อ-สกุล" : i[1],
+                    "ตำแหน่ง" : [i[0]],
+                    "ตำแหน่ง ใน Manpower" : staffPosition.length > 0 ? staffManpower[staffPosition[0]] : ["อื่นๆ"],  //waiting for recordIDs
+                    "เวลาทำงาน" : parsed["q208_timeSchedule"],
+                    "Daily Report" : Object.values(DRrec),
+                    "Error" : errorLog.join(" และ ")
+                  }
+                }
+              )
+            }
+          }
+        }
+        //create staff records
+        const staffRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดพนักงาน", DRdataToAirtable["รายละเอียดพนักงาน"], true, "ชื่อ-สกุล");
+        console.log(`★ "รายละเอียดพนักงาน" record created = ${JSON.stringify(staffRec)}`);
+
+
+
+        //Query manpower equipment list (DO NOT USE THIS, ADD NEW ROW WHEN THERE IS NEW EQUIPMENT)
+        // var EQmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "EQUIPMENT", {"fields":["Description"]} , "Description")
+        // console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
+        //add equipment data
+        if(parsed["q53_input53"]) {
+          for( var i of parsed["q53_input53"]) {
+            if(i[0]) {
+              DRdataToAirtable["รายละเอียดเครื่องจักร"] = DRdataToAirtable["รายละเอียดเครื่องจักร"].concat(
+                {
+                  "fields" : {
+                    "เครื่องจักร" : i[0],
+                    "จำนวน" : i[1],
+                    "หน่วย" : i[2],
+                    "Daily Report" : Object.values(DRrec),
+                    "EQUIPMENT" : [i[0]],  //waiting for recordIDs
+                    "Error" : ""
+                  }
+                }
+              )
+            }
+          }
+        }
+        //create equipment records
+        const EQrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดเครื่องจักร", DRdataToAirtable["รายละเอียดเครื่องจักร"], true, "เครื่องจักร");
+        console.log(`★ "สภาพอากาศ" record created = ${JSON.stringify(EQrec)}`);
+
+
+        //add weather data
+        if(parsed["q200_input200"]) {
+          for( var i of parsed["q200_input200"]) {
+            DRdataToAirtable["ตารางสภาพอากาศ (WR.)"] = DRdataToAirtable["ตารางสภาพอากาศ (WR.)"].concat(
+              {
+                "fields" : {
+                  "สภาพอากาศ" : `สภาพอากาศ ${parsed["q22_input22"]["day"]}/${parsed["q22_input22"]["month"]}/${parsed["q22_input22"]["year"]}`,
+                  "ช่วงเวลาฝนตก (from Daliy Report)" : i[1] == "ฝนตก" ? i[0] : "" ,
+                  "สภาพอากาศ (from Daliy Report)" : [i[1] == "ฝนตก" ? "ฝนตก" : "ปลอดโปร่ง"],
+                  "Daily Report" : Object.values(DRrec)
+                }
+              }
+            )
+          }
+        }
+        //create weather records
+        const weatherRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "ตารางสภาพอากาศ (WR.)", DRdataToAirtable["ตารางสภาพอากาศ (WR.)"], true, "สภาพอากาศ");
+        console.log(`★ "รายละเอียดเครื่องจักร" record created = ${JSON.stringify(weatherRec)}`);
+
+        console.log(`★ DRdataToAirtable = ${JSON.stringify(DRdataToAirtable)}`);
+        
+
+
+        // 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'"
+        console.log("★ 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'");
         // Structure the data
 
         // if there are PM comment => set status to 'AN'
@@ -1184,7 +1444,7 @@ app.post('/slack/actions', async(req, res) => {
             //2.get progress100% (ยังไม่ทำเพราะ base เก็บข้อมูล DR ยังไม่มา)
             const progressData = undefined;
             if(progressData) {
-              console.log(`★ There are preogress 100% from other DR`);
+              console.log(`★ There are progress 100% from other DR`);
             }
             else {
               console.log(`★ No progress100% this week, delete progress tree`);
