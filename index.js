@@ -46,6 +46,7 @@ const app = express();
 
 const apiUrl = 'https://slack.com/api';
 const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
+const baseWR = new Airtable(process.env.AIRTABLE_API_KEY).base("appUmch1aSmkh0ZI8");  //base "DR.&WR."
 
 
   /*
@@ -715,7 +716,7 @@ app.post('/slack/events' , async(req, res) => {
   
   
   //If there are event => Do something
-
+  
   if(req.body.event) {
     const event = req.body.event;
     console.log(`★ event = ${JSON.stringify(event)}`);
