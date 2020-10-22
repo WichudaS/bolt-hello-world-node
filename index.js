@@ -993,7 +993,6 @@ app.post('/slack/events' , async(req, res) => {
     }
 
   }
-
   res.end();
 
 });
