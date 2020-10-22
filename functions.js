@@ -83,7 +83,7 @@ function AT_createRecordsWithRecIDOutput(base, table, data, typecast, refField) 
           reject();
       }
   }).catch(err => {
-        console.log(err);
+        console.error(err);
   });
 }
 
@@ -108,7 +108,7 @@ function AT_listATRecordsWithRecIDOutput(base, table, data, refField) {
         } 
         else {
           console.log(`found nothing, return blank`);
-          resolve();
+          resolve(output);
         } 
       });  
     }
@@ -138,7 +138,7 @@ function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
         } 
         else {
           console.log(`found nothing, return blank`);
-          resolve();
+          resolve(output);
         } 
       });  
     }
