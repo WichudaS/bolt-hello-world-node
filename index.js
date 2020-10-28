@@ -993,6 +993,8 @@ app.post('/slack/events' , async(req, res) => {
     }
 
   }
+  
+  
   res.end();
 
 });
@@ -1491,41 +1493,46 @@ app.post('/slack/actions', async(req, res) => {
 
       
       if(submissionValue) {
-         //DR Reject comment submit
-        if(payload.view.state.values.DR_approveAction.DR_rejectComment.value) {
-          res.sendStatus(204); //ack;
 
-          console.log(`★ Rejected comment received!, update DB & send message to submitter`);
+        //Check DR approve action
+        if(submissionValue.DR_approveAction) {
+          //DR Reject comment submit
+         if(submissionValue.DR_approveAction.DR_rejectComment.value) {
+           res.sendStatus(204); //ack;
+  
+           console.log(`★ Rejected comment received!, update DB & send message to submitter`);
+  
+           //update DB
+           let DRno = metaData.DRno;
+           let project = metaData.project;
+  
+           const DRApproveResult = await fs.DRListDocRef(project, DRno).update({
+             "status": "ไม่อนุมัติ (RE)",
+             "approveData.approveDate": `${today}`,
+             "approveData.approveResult": "RE",
+             "approveData.approveComment": payload.view.state.values.DR_approveAction.DR_rejectComment.value
+           });
+           console.log(DRApproveResult);
+  
+           //send message to submitter 
+             //1. get DB Data
+           console.log(`★ Get all this DR Data from DB to form a reject message`);
+  
+           let DRApproveData = await fs.DRListDocRef(project, DRno).get().then(documentSnapshot => {
+             let fields = documentSnapshot.data();
+             return fields;
+           })
+           console.log(`★ data from DB = `);
+           console.log(JSON.stringify(DRApproveData)); 
+  
+           //2. send Message
+           let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drRejectMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)))
+  
+           console.log(`★ DM'ed to submitter, there is a result =\n `);
+           console.log(postResult.data);
+         } 
+        }
 
-          //update DB
-          let DRno = metaData.DRno;
-          let project = metaData.project;
-
-          const DRApproveResult = await fs.DRListDocRef(project, DRno).update({
-            "status": "ไม่อนุมัติ (RE)",
-            "approveData.approveDate": `${today}`,
-            "approveData.approveResult": "RE",
-            "approveData.approveComment": payload.view.state.values.DR_approveAction.DR_rejectComment.value
-          });
-          console.log(DRApproveResult);
-
-          //send message to submitter 
-            //1. get DB Data
-          console.log(`★ Get all this DR Data from DB to form a reject message`);
-
-          let DRApproveData = await fs.DRListDocRef(project, DRno).get().then(documentSnapshot => {
-            let fields = documentSnapshot.data();
-            return fields;
-          })
-          console.log(`★ data from DB = `);
-          console.log(JSON.stringify(DRApproveData)); 
-
-          //2. send Message
-          let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drRejectMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)))
-
-          console.log(`★ DM'ed to submitter, there is a result =\n `);
-          console.log(postResult.data);
-        } 
       }
       
       

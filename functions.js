@@ -244,31 +244,43 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
         if(records.length>0) {
           var i=0;
           var m=0;
+          let staffName = []
 
           for(var a=0 ; a<records.length ; a++) {
             console.log(`recordID = ${records[a].id} , record fields = ${JSON.stringify(records[a].fields)}`);
             var { fields } = records[a];
-
+            //assign into staff object
             if(fields["ชื่อพนักงาน"]) {
-              for(var j=0 ; j<2 ; j++) {
-                let key = `q146_staffTable[${i}][${j}]`;
-                
-                if(j==0) {
-                  if(fields["ตำแหน่ง (from รายชื่อพนักงาน)"]) {
-                    obj.staff[key] = fields["ตำแหน่ง (from รายชื่อพนักงาน)"].join();
+              //check for duplicate names
+              if(staffName.includes(fields["ชื่อพนักงาน (Text)"])) {
+                console.log(`Duplicated staff Name, do nothing`)
+              }
+              else {
+                console.log(`new staff name, push into staffName array, and add into staff object`)
+                staffName = [...staffName, fields["ชื่อพนักงาน (Text)"]]
+                //add staff into staff object output
+                for(var j=0 ; j<2 ; j++) {
+                  let key = `q146_staffTable[${i}][${j}]`;
+                  
+                  if(j==0) {
+                    if(fields["ตำแหน่ง (from รายชื่อพนักงาน)"]) {
+                      obj.staff[key] = fields["ตำแหน่ง (from รายชื่อพนักงาน)"].join();
+                    }
+                    else {
+                      obj.staff[key] = "ไม่มีการระบุตำแหน่งงานในฐานข้อมูล โปรดตรวจสอบ Base= ข้อมูลสำหรับ Daily Report, Table= รายชื่อพนักงาน"
+                    }
                   }
                   else {
-                    obj.staff[key] = "ไม่มีการระบุตำแหน่งงานในฐานข้อมูล โปรดตรวจสอบ Base= ข้อมูลสำหรับ Daily Report, Table= รายชื่อพนักงาน"
+                    obj.staff[key] = fields["ชื่อพนักงาน (Text)"]
                   }
+                
                 }
-                else {
-                  obj.staff[key] = fields["ชื่อพนักงาน (Text)"]
-                }
-              
+                //next line
+                i=i+1;
               }
-              i=i+1;
             }
 
+            //assign into DC object
             if(fields["ชื่อคนงาน"]) {
               for(var n=0 ; n<4 ; n++) {
                 let key = `q39_DCTable[${m}][${n}]`
@@ -308,7 +320,6 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
               }
               m=m+1;
             }
-
 
           }
           console.log(obj);
