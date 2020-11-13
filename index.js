@@ -1456,10 +1456,11 @@ app.post('/slack/actions', async(req, res) => {
           else{
             console.log("★ input checked! continue");
 
-            console.log(`★ Clear modal view(s)`);
-            res.send({
-              "response_action": "clear"
-            });
+            //NOT USED
+            // console.log(`★ Clear modal view(s)`);
+            // res.send({
+            //   "response_action": "clear"
+            // });
             
             //find other infos
             //1.get DC & staff data from Airtable
@@ -1531,22 +1532,39 @@ app.post('/slack/actions', async(req, res) => {
             //merge URL
             URL = `${data.head}?${URLparam}`
             console.log(`★ URL = ${URL}`);
-
+            
+            //Shorten URL
+            let URLshort = await TinyURL.shorten(URL); 
+            console.log(`★ URLshort = ${URLshort}`);
+            
             //save URL to Firestore cache
-            let DRcacheUpdate = await fs.DRPrepopURLDocRef(userSubmitID).update({"misc.DRPrepopulatedURL":URL});
+            let DRcacheUpdate = await fs.DRPrepopURLDocRef(userSubmitID).update({"misc.DRPrepopulatedURL":URLshort});
             console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
 
+
+
+            //Push new modal view that contains PrepopulatedURL
+            console.log(`★ drProject = ${drProject}`);
+            console.log(`★ drDate = ${drDate}`);
+
+            // let pushURLviewResult = await axios.post(`https://slack.com/api/views.push`,msg.drPrepopulatedURL(userSubmitID, channel_id, drProject, drDate, URLshort));
+
+            // console.log(`★ pushURLviewResult = ${JSON.stringify(pushURLviewResult.data)}`);
+            try {
+              res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, drProject, drDate, URLshort));
+              console.log('★ New modal view pushed!');              
+            } catch (error) {
+              console.error(error);
+            }
+
+            /* NOT USED
             //Send URL message
             let responseURL = payload.response_urls[0].response_url;
             console.log(`★ responseURL = ${responseURL}`);
 
-            let URLshort = await TinyURL.shorten(URL); 
-            console.log(`★ URLshort = ${URLshort}`);
 
             try {
 
-              console.log(`★ drProject = ${drProject}`);
-              console.log(`★ drDate = ${drDate}`);
               
               let URLmessageResult = await axios.post( `${responseURL}` , msg.drPrepopMsg(drProject, drDate, URLshort) );
 
@@ -1557,7 +1575,7 @@ app.post('/slack/actions', async(req, res) => {
               console.log(error);
 
             }
-
+            */
           }
           
         break;

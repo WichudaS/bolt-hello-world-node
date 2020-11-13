@@ -62,7 +62,7 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopInput"});
   
   
-  const msg_old = {
+  const msg = {
     "type": "modal",
     "title": {
       "type": "plain_text",
@@ -94,7 +94,7 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": "เลือกโครงการและวันที่ก่อนนะคะ"
+          "text": "*:building_construction: :calendar:   เลือกโครงการและวันที่ก่อนค่ะ*"
         }
       },
       {
@@ -146,7 +146,7 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
     "private_metadata":metadata,
   };
 
-  let msg = {
+  let msg_not_used = {
     "type": "modal",
     "title": {
       "type": "plain_text",
@@ -413,9 +413,9 @@ const drErrorMsg = (user_id, channel_id) => {
 
 };
 
-const drPrepopulatedURL = (user_id, channel_id, URL) => {
+const drPrepopulatedURL = (user_id, channel_id, project, date, url) => {
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopclosed"});
-  
+  let formattedDate = dateFormat(new Date(date), "dd/mm/yyyy");
   
   // const msg = {
   //   "type": "modal",
@@ -444,7 +444,7 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
   //       "type": "section",
   //       "text": {
   //         "type": "mrkdwn",
-  //         "text": `:cityscape:  <${URL}| Jotform URL Link CLICK HERE!>  :cityscape:`
+  //         "text": `:cityscape:  <${url}| Jotform URL Link CLICK HERE!>  :cityscape:`
   //       }
   //     },
   //     {
@@ -486,7 +486,7 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": "ลิ้งค์สำหรับกรอก Daily Report ค่ะ"
+          "text": "ลิ้งค์สำหรับกรอก Daily Report"
         }
       },
       {
@@ -496,62 +496,24 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": `:cityscape:  <${URL}| Jotform URL Link CLICK HERE!>  :cityscape:`
+          "text": `:building_construction:  โครงการ:  ${project}\n\n :calendar:         วันที่:  ${formattedDate}\n\n :jotform:         URL:  <${url}|DR_${project}_${formattedDate}>`
         }
       },
       {
         "type": "section",
         "text": {
           "type": "plain_text",
-          "text": " ",
+          "text": "ขอบคุณค่ะ",
           "emoji": true
         }
-      },
-      {
-        "type": "section",
-        "text": {
-          "type": "plain_text",
-          "text": " ",
-          "emoji": true
-        }
-      },
-      {
-        "type": "section",
-        "text": {
-          "type": "plain_text",
-          "text": " ",
-          "emoji": true
-        }
-      },
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": "*:apple-logo:  สำหรับ ios ทำตามขั้นตอนดังนี้*\n    - คลิกปุ่มรูป :apple-logo: ด้านล่าง\n    - ปิดหน้าต่างนี้\n    - คลิ๊ก URL ที่แจ้งเตือนใหม่ในกล่องข้อความ"
-        }
-      },
-      {
-        "type": "actions",
-        "block_id": "DR_inputModal",
-        "elements": [
-          {
-            "type": "button",
-            "text": {
-              "type": "plain_text",
-              "text": "สำหรับ ios :apple-logo: คลิกที่นี่",
-              "emoji": true
-            },
-            "action_id": "sendDRurlForIos"
-          }
-        ]
       }
     ],
     "private_metadata":metadata,
-  };
+  }; 
 
 
   return new Promise((resolve, reject) => {
-      arg = {
+    let arg = {
         "response_action": "update",
         "view": msg
       }
