@@ -62,7 +62,7 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopInput"});
   
   
-  const msg = {
+  const msg_old = {
     "type": "modal",
     "title": {
       "type": "plain_text",
@@ -99,7 +99,7 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
       },
       {
         "type": "actions",
-        "block_id": "DR_ProjectAndDateSelect",
+        "block_id": "DR_inputModal",
         "elements": [
           {
             "type": "static_select",
@@ -145,6 +145,114 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
     ],
     "private_metadata":metadata,
   };
+
+  let msg = {
+    "type": "modal",
+    "title": {
+      "type": "plain_text",
+      "text": "Daily Report",
+      "emoji": true
+    },
+    "submit": {
+      "type": "plain_text",
+      "text": "Submit",
+      "emoji": true
+    },
+    "close": {
+      "type": "plain_text",
+      "text": "Cancel",
+      "emoji": true
+    },
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": welcomeText
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*:building_construction: :calendar:   เลือกโครงการและวันที่ก่อนค่ะ*"
+        }
+      },
+      {
+        "type": "actions",
+        "block_id": "DR_inputModal",
+        "elements": [
+          {
+            "type": "static_select",
+            "action_id": "DR_projectList",
+            "placeholder": {
+              "type": "plain_text",
+              "text": "โครงการ",
+              "emoji": true
+            }
+          },
+          {
+            "type": "datepicker",
+            "action_id": "DR_date",
+            "initial_date": initialDatepicker,
+            "placeholder": {
+              "type": "plain_text",
+              "text": "วันที่ใน DR",
+              "emoji": true
+            }
+          }
+        ]
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "plain_text",
+            "text": "(วันที่คือวันที่ใน DR เช่น การบันทึก DR ของเมื่อวาน ให้ใส่วันที่เมื่อวาน)",
+            "emoji": true
+          }
+        ]
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "plain_text",
+            "text": " ",
+            "emoji": true
+          }
+        ]
+      },
+      {
+        "type": "input",
+        "element": {
+          "type": "conversations_select",
+          "action_id": "channelSelected",
+          "default_to_current_conversation": true,
+          "response_url_enabled": true
+        },
+        "label": {
+          "type": "plain_text",
+          "text": ":male-construction-worker: :female-construction-worker:   เลือกห้องที่จะให้ URL ส่งไปหา (เห็นได้คนเดียว)",
+          "emoji": true
+        }
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "mrkdwn",
+            "text": "(หากส่งหาตัวเองในห้องที่กำลังเปิดอยู่ _ไม่ต้องแก้ไขข้อมูล_)"
+          }
+        ]
+      }
+    ],
+    "private_metadata":metadata,
+  }
+
 
   return new Promise((resolve, reject) => {
 
@@ -309,7 +417,59 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
   let metadata = JSON.stringify({"channel_id": channel_id , "viewName": "DR_prepopclosed"});
   
   
-  const msg = {
+  // const msg = {
+  //   "type": "modal",
+  //   "title": {
+  //     "type": "plain_text",
+  //     "text": "Daily Report",
+  //     "emoji": true
+  //   },
+  //   "close": {
+  //     "type": "plain_text",
+  //     "text": "Close",
+  //     "emoji": true
+  //   },
+  //   "blocks": [
+  //     {
+  //       "type": "section",
+  //       "text": {
+  //         "type": "mrkdwn",
+  //         "text": "ลิ้งค์สำหรับกรอก Daily Report ค่ะ"
+  //       }
+  //     },
+  //     {
+  //       "type": "divider"
+  //     },
+  //     {
+  //       "type": "section",
+  //       "text": {
+  //         "type": "mrkdwn",
+  //         "text": `:cityscape:  <${URL}| Jotform URL Link CLICK HERE!>  :cityscape:`
+  //       }
+  //     },
+  //     {
+  //       "type": "section",
+  //       "text": {
+  //         "type": "plain_text",
+  //         "text": " ",
+  //         "emoji": true
+  //       }
+  //     },
+  //     {
+  //       "type": "context",
+  //       "elements": [
+  //         {
+  //           "type": "plain_text",
+  //           "text": " ",
+  //           "emoji": true
+  //         }
+  //       ]
+  //     }
+  //   ],
+  //   "private_metadata":metadata,
+  // };
+
+  let msg = {
     "type": "modal",
     "title": {
       "type": "plain_text",
@@ -336,12 +496,59 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": `:cityscape:  <${URL}|Daily Report JotForm URL>  :cityscape:`
+          "text": `:cityscape:  <${URL}| Jotform URL Link CLICK HERE!>  :cityscape:`
         }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "plain_text",
+          "text": " ",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "plain_text",
+          "text": " ",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "plain_text",
+          "text": " ",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*:apple-logo:  สำหรับ ios ทำตามขั้นตอนดังนี้*\n    - คลิกปุ่มรูป :apple-logo: ด้านล่าง\n    - ปิดหน้าต่างนี้\n    - คลิ๊ก URL ที่แจ้งเตือนใหม่ในกล่องข้อความ"
+        }
+      },
+      {
+        "type": "actions",
+        "block_id": "DR_inputModal",
+        "elements": [
+          {
+            "type": "button",
+            "text": {
+              "type": "plain_text",
+              "text": "สำหรับ ios :apple-logo: คลิกที่นี่",
+              "emoji": true
+            },
+            "action_id": "sendDRurlForIos"
+          }
+        ]
       }
     ],
     "private_metadata":metadata,
   };
+
 
   return new Promise((resolve, reject) => {
       arg = {
@@ -356,6 +563,45 @@ const drPrepopulatedURL = (user_id, channel_id, URL) => {
     })
 
 
+};
+
+//-----Pre-populated link message-----
+const drPrepopMsg = (project, date, url) => {
+
+  let formattedDate = dateFormat(new Date(date), "dd/mm/yyyy");
+
+  const args = {
+    "text": "ลิ้งค์กรอก Daily Report ค่ะ",
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "ลิ้งค์สำหรับกรอก Daily Report"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `:building_construction:  โครงการ: ${project}\n\n :calendar:  วันที่:       ${formattedDate}\n\n :jotform:  URL:       <${url}|DR-${project}-${formattedDate}>`
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "plain_text",
+          "text": "ขอบคุณค่ะ",
+          "emoji": true
+        }
+      }
+    ]
+  };
+
+  return args;
 };
 
 //-----Approve request msg-----
@@ -1417,6 +1663,5 @@ function sendEphemeralMsg(user_id, channel_id, msg, SLACK_BOT_TOKEN) {
 
 
 //=============================EXPORT FUNCTIONS=============================
-module.exports = { helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg,
-                  drMsg, drErrorMsg, drPrepopulatedURL, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg};
+module.exports = { helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg, drMsg, drErrorMsg, drPrepopulatedURL, drPrepopMsg, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg};
 
