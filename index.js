@@ -17,6 +17,7 @@ const qs = require('qs');
 const Airtable = require("airtable");
 const dateFormat = require("dateformat");
 const formidable = require("express-formidable");
+const TinyURL = require("tinyurl");
 // const admin = require('firebase-admin');
 
 
@@ -1031,11 +1032,12 @@ app.post('/slack/commands', async(req, res) => {
   //if text contains 'dr' => send DR message + create DR database cache document
   else if (text.includes("dr") || text.includes("DR") || text.includes("daily report") || text.includes("Daily Report") || text.includes("Daily report") || text.includes("DAILY REPORT")) {
     console.log("==SEND DR MESSAGE==");
+    res.sendStatus(204);
     
     msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
     .then(result => {
       console.log(result.data);
-      return res.sendStatus(204);
+      return console.log(`★ DR modal posted!`)
     })
     .catch(err => {
       console.error(err);
@@ -1075,7 +1077,8 @@ app.post('/slack/commands', async(req, res) => {
       },
       "misc": {
         "DRProjectQuery":"",
-        "DRDateQuery":""
+        "DRDateQuery":"",
+        "DRPrepopulatedURL":""
       }
     };
 
@@ -1125,7 +1128,7 @@ app.post('/slack/actions', async(req, res) => {
   switch(type) {
     case "block_actions":
       let { token, trigger_id, user, actions, response_url, container, view, message } = JSON.parse(req.body.payload);
-      const channelID = container.channel_id || view.private_metadata;
+      const channelID = container.channel_id || JSON.parse(view.private_metadata).channel_id;
       const user_id = user.id;  
       const block_id = actions[0].block_id;
       const action_id = actions[0].action_id;
@@ -1140,11 +1143,13 @@ app.post('/slack/actions', async(req, res) => {
       console.log("★ user_id = "+ user_id); 
       console.log(`★ channelID = ${channelID}`);
 
-
+      //block_id controls various *specific actions* that grouped by block_id 
       switch (block_id) {
+        //PM interacts in DR Approve Requested Message
         case "DR_approveAction":
 
           switch (action_id) {
+            //PM hit 'Approved' button => 1.send Jotform link for PM to sign and 2.delete approve requested message
             case "DR_approve":
               console.log(`★ PM approved, redirect to Jotform Edit submission page`);
               //Direct to Edit submissionURL link
@@ -1154,7 +1159,7 @@ app.post('/slack/actions', async(req, res) => {
               let delmsg = msg.delMsg(response_url)
               console.log(delmsg);
             break;
-          
+            //PM hit 'Reject' button => 1.pop up modal to PM to add comment  and 2.delete approve requested message
             case "DR_reject":
               console.log(`★ PM rejected, pop up modal to add comment & carry data to be update to DB over modal metadata`);
               res.status(200).write(""); // ack 
@@ -1165,7 +1170,7 @@ app.post('/slack/actions', async(req, res) => {
                 "project": message.blocks[1].fields[1].text.split("\n")[1].split("_")[0]
               }
 
-              //send Comment input modal
+              //send Comment input modal to PM
               let postModalResult = await axios.post(`https://slack.com/api/views.open`, qs.stringify(msg.drRejectCommentMsg(trigger_id, process.env.SLACK_BOT_TOKEN, metadata)));
               console.log(`★ Modal posted, here is a result =`);
               console.log(postModalResult.data);
@@ -1180,12 +1185,137 @@ app.post('/slack/actions', async(req, res) => {
           }
 
         break;  
+        
+        //User interacts in DR prepopulatedURL input modal
+        case "DR_inputModal":
+          
+          switch (action_id) {
+            //User select project in DR input modal => 1.query project information, PM&SE info then 2.Update cache
+            case "DR_projectList":
+              res.sendStatus(204);
+
+              let DRProjectData = {
+                "SE": {
+                  "SEName[first]": "",
+                  "SEName[last]": "",
+                  "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+                  "SESlackID": ""
+                },
+                "PM": {
+                  "PMName[first]": "",
+                  "PMName[last]": "",
+                  "PMPosition": "ผู้จัดการโครงการ"
+                },
+                "misc.DRProjectQuery": ""
+              };
+
+              DRProjectQuery = actions[0].selected_option.value;
+              console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
+              DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
+
+              DRProjectData.SE.SESlackID = user.id;
+              console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
+
+              // get PM's ID
+              let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
+              let PMRecordID = "";
+              if(projectData) {
+                PMRecordID = projectData["ชื่อ PM (จากรายชื่อพนักงาน)"]
+              }
+              //find PM's info (firstname, lastname)
+              let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
+              console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
+              //store data into object
+              if(PMInfo) {
+                DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+                DRProjectData.PM["PMName[last]"] = PMInfo["ชื่อ-สกุล"].split(" ")[1].trim()
+              }
+
+              //find SE info with SE slackID
+              let SEData = await fn.DR_searchPPfrominfo(baseDR, "รายชื่อพนักงาน", `{Slack USER ID}="${DRProjectData.SE.SESlackID}"`)
+              if(SEData) {
+                DRProjectData.SE["SEName[first]"] = SEData["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+                DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
+              }
+
+              console.log("★ DRProjectData =");
+              console.log(JSON.stringify(DRProjectData));
+
+              //update to DB
+              let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
+              console.log(DRcacheUpdate);
+            break;
+            
+            //User select date in DR input modal => 1.parse date information then 2.Update cache
+            case "DR_date":
+              res.sendStatus(204);
+
+              let DRDateData = {
+                "day": {
+                  "input22[month]": "",
+                  "input22[day]": "",
+                  "input22[year]": ""
+                },            
+                "misc.DRDateQuery": ""
+              };
+
+              // res.sendStatus(204); //ack and end
+              DRDateQuery = actions[0].selected_date
+              console.log(`★ DRDateQuery = ${DRDateQuery}`);
+              DRDateData["misc.DRDateQuery"] = DRDateQuery;
+
+              //store data into object 
+              DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
+              DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
+              DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
+
+              console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
+              console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
+              console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
+
+              console.log("★ DRDateData =");
+              console.log(JSON.stringify(DRDateData));
+
+              //Update DB
+              let DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
+              console.log(DRcacheDateUpdate);
+            break;
+          
+            //User clicked 'URL for ios' in DR input modal => 1.close this modal, 2.send URL message
+            // case "sendDRurlForIos":
+            //   res.sendStatus(200);
+
+            //   console.log(`★ User clicked 'Requested URL for ios' in DR input modal => 1.close this modal, 2.send URL message`);
+              
+            //   //1.close DR input modal
+            //   console.log(`★ 1.close DR input modal`);
+
+            //   //2.send URL message
+            //   console.log(`★ 2.send URL message`);
+            //   let messageResult = await axios.post(`https://slack.com/api/chat.postMessage`, qs.stringify({
+            //     "token": process.env.SLACK_BOT_TOKEN,
+            //     // "response_type": "ephemeral",
+            //     "channel": `${channelID}`,
+            //     "text": "This is your URL"
+            //   }));
+            //   console.log(`★ URL message result = ${JSON.stringify(messageResult.data)}`);
+              
+            //   res.end();
+            // break
+
+            default:
+              break;
+          }
+
+        break;
 
         default:
         break;
       }
-
+      
+      //THIS action_id controls various *common actions* which DOES NOT have  block_id 
       switch(action_id) {
+        //User hit 'delete message' button in help message => delete the message
         case "deletemessage":
           res.status(200);
           res.write(""); //=ack();
@@ -1196,12 +1326,23 @@ app.post('/slack/actions', async(req, res) => {
           console.log(result.data);
           res.end();
         break;
-    
+        //User hit 'Open Daily Report' button in help messsage => send DR modal
         case "open_drMsg":
-          res.status(200);
-          res.write(""); //=ack();
+          res.sendStatus(204);
           console.log("★ open DR message case");
           // res.status(200); //=ack();
+
+          //send DR message
+          msg.drMsg(user_id, channelID, trigger_id, process.env.SLACK_BOT_TOKEN)
+          .then(result => {
+            console.log(result.data)
+            return console.log("★ Modal posted");
+          
+          })
+          .catch(err => {
+            console.error(err);
+          })
+
 
           //create cache for pre-populateURL
           var DRJotUrl = {
@@ -1236,115 +1377,13 @@ app.post('/slack/actions', async(req, res) => {
             },
             "misc": {
               "DRProjectQuery":"",
-              "DRDateQuery":""
+              "DRDateQuery":"",
+              "DRPrepopulatedURL":""
             }
           };
           const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
           console.log(DRcache);
 
-          //send DR message
-          msg.drMsg(user_id, channelID, trigger_id, process.env.SLACK_BOT_TOKEN)
-          .then(result => {
-            console.log("★ message posted succesfully!");
-            return res.end();
-          
-          })
-          .catch(err => {
-            console.error(err);
-          })
-        break;
-
-        case "DR_projectList":
-          res.status(200);
-          res.write(""); //=ack();
-
-          let DRProjectData = {
-            "SE": {
-              "SEName[first]": "",
-              "SEName[last]": "",
-              "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
-              "SESlackID": ""
-            },
-            "PM": {
-              "PMName[first]": "",
-              "PMName[last]": "",
-              "PMPosition": "ผู้จัดการโครงการ"
-            },
-            "misc.DRProjectQuery": ""
-          };
-
-          DRProjectQuery = actions[0].selected_option.value;
-          console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
-          DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
-
-          DRProjectData.SE.SESlackID = user.id;
-          console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
-
-          // get PM's ID
-          let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
-          let PMRecordID = "";
-          if(projectData) {
-            PMRecordID = projectData["ชื่อ PM (จากรายชื่อพนักงาน)"]
-          }
-          //find PM's info (firstname, lastname)
-          let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
-          console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
-          //store data into object
-          if(PMInfo) {
-            DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
-            DRProjectData.PM["PMName[last]"] = PMInfo["ชื่อ-สกุล"].split(" ")[1].trim()
-          }
-
-          //find SE info with SE slackID
-          let SEData = await fn.DR_searchPPfrominfo(baseDR, "รายชื่อพนักงาน", `{Slack USER ID}="${DRProjectData.SE.SESlackID}"`)
-          if(SEData) {
-            DRProjectData.SE["SEName[first]"] = SEData["ชื่อ-สกุล"].split(" ")[0].trim()                                      
-            DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
-          }
-
-          console.log("★ DRProjectData =");
-          console.log(JSON.stringify(DRProjectData));
-
-          //update to DB
-          const DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
-          console.log(DRcacheUpdate);
-          res.end();
-        break;
-
-        case "DR_date":
-          res.status(200);
-          res.write(""); //=ack();
-
-          let DRDateData = {
-            "day": {
-              "input22[month]": "",
-              "input22[day]": "",
-              "input22[year]": ""
-            },            
-            "misc.DRDateQuery": ""
-          };
-
-          // res.sendStatus(204); //ack and end
-          DRDateQuery = actions[0].selected_date
-          console.log(`★ DRDateQuery = ${DRDateQuery}`);
-          DRDateData["misc.DRDateQuery"] = DRDateQuery;
-
-          //store data into object 
-          DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
-          DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
-          DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
-
-          console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
-          console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
-          console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
-
-          console.log("★ DRDateData =");
-          console.log(JSON.stringify(DRDateData));
-
-          //Update DB
-          const DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
-          console.log(DRcacheDateUpdate);
-          res.end();
         break;
       }
 
@@ -1365,12 +1404,14 @@ app.post('/slack/actions', async(req, res) => {
       console.log(`★ userSubmitID = ${userSubmitID}`);
       const submissionValue = payload.view.state.values;
       console.log(`★ submissionValue = ${JSON.stringify(submissionValue)}`);
+        
       
 
-
-      //DR generate pre-populated Jotform URL
+      //Specific actions only for view submission that has 'viewName' in private_metadata
       switch(viewName) {
+        //User hit 'Submit' button in DR input modal => 1.Verify project name & date, if "OK" then 2.Generate pre-populated Jotform URL 3.Push new view with prepopulated Jotform URL
         case "DR_prepopInput":
+          
           console.log("★ case DR_pre-populate URL");
           let today = new Date();
 
@@ -1382,11 +1423,11 @@ app.post('/slack/actions', async(req, res) => {
           })
           console.log(`★ data from DB = `);
           console.log(JSON.stringify(data));
-
+          
           //2. check the date (if data.misc.DRDateQuery = "" => data.misc.DRDateQuery = date)
           var date = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
           let day = dateFormat(date, "yyyy-mm-dd");
-
+          
           if(!data.misc.DRDateQuery) {
             console.log(`★ There is no date from DB, assign date`);
             data.misc.DRDateQuery = day;
@@ -1395,14 +1436,18 @@ app.post('/slack/actions', async(req, res) => {
             data.day["input22[year]"] = day.split("-")[0].trim()
             data.day["input22[month]"] = day.split("-")[1].trim()
             data.day["input22[day]"] = day.split("-")[2].trim()
-
+            
             console.log(`★ input22[day] = ${data.day["input22[day]"]}`);
             console.log(`★ input22[month] = ${data.day["input22[month]"]}`);
             console.log(`★ input22[year] = ${data.day["input22[year]"]}`);
-
+            
           }
+          
+          //2.5 Store project & date variable for output message
+          let drProject = data.misc.DRProjectQuery;
+          let drDate = data.misc.DRDateQuery 
 
-          //3. check and send message
+          //3. check, get other infos, save URL to Firestore cache, push new view with prepopulated Jotform URL
           if(!(data.misc.DRProjectQuery) || (new Date(data.misc.DRDateQuery)>today)) {
             console.log("-----error case, no project chosen ,or date is in the future");
             res.send(await msg.drErrorMsg(userSubmitID, channel_id))
@@ -1410,7 +1455,12 @@ app.post('/slack/actions', async(req, res) => {
           }
           else{
             console.log("★ input checked! continue");
-              
+
+            console.log(`★ Clear modal view(s)`);
+            res.send({
+              "response_action": "clear"
+            });
+            
             //find other infos
             //1.get DC & staff data from Airtable
             const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${data.misc.DRDateQuery}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
@@ -1482,21 +1532,43 @@ app.post('/slack/actions', async(req, res) => {
             URL = `${data.head}?${URLparam}`
             console.log(`★ URL = ${URL}`);
 
-            //send message through chat.postEphemeral 
-             res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, URL))
-            console.log(`★ Modal link updated!`);
+            //save URL to Firestore cache
+            let DRcacheUpdate = await fs.DRPrepopURLDocRef(userSubmitID).update({"misc.DRPrepopulatedURL":URL});
+            console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
+
+            //Send URL message
+            let responseURL = payload.response_urls[0].response_url;
+            console.log(`★ responseURL = ${responseURL}`);
+
+            let URLshort = await TinyURL.shorten(URL); 
+            console.log(`★ URLshort = ${URLshort}`);
+
+            try {
+
+              console.log(`★ drProject = ${drProject}`);
+              console.log(`★ drDate = ${drDate}`);
+              
+              let URLmessageResult = await axios.post( `${responseURL}` , msg.drPrepopMsg(drProject, drDate, URLshort) );
+
+  
+              console.log(`★ URLmessageResult = ${JSON.stringify(URLmessageResult.data)}`);
+              console.log(`★ message posted`)
+            } catch (error) {
+              console.log(error);
+
+            }
 
           }
           
         break;
       }
 
-      
+      //******รอ assign viewName แล้วย้ายขึ้นไปด้านบนให้เหมือนกัน********
       if(submissionValue) {
 
-        //Check DR approve action
+        //Check DR approve action in DR approve requested message
         if(submissionValue.DR_approveAction) {
-          //DR Reject comment submit
+          //User hit 'submit' button in reject comment modal => 1.update cache and 2.send reject message to SE
          if(submissionValue.DR_approveAction.DR_rejectComment.value) {
            res.sendStatus(204); //ack;
   
@@ -1534,6 +1606,7 @@ app.post('/slack/actions', async(req, res) => {
         }
 
       }
+
       
       
     break;
