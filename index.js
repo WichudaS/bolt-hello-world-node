@@ -444,12 +444,17 @@ app.post('/jotform/hooks' , async function(req, res) {
         if(parsed["q53_input53"]) {
           for( var i of parsed["q53_input53"]) {
             if(i[0]) {
+
+              //arrayed "รายละเอียดการทำงาน"'s data
+              let EQwork = i[3].split(",").map(w => w.trim());
+
               DRdataToAirtable["รายละเอียดเครื่องจักร"] = DRdataToAirtable["รายละเอียดเครื่องจักร"].concat(
                 {
                   "fields" : {
                     "เครื่องจักร" : i[0],
                     "จำนวน" : i[1],
                     "หน่วย" : i[2],
+                    "รายละเอียดการทำงาน": EQwork,
                     "Daily Report" : Object.values(DRrec),
                     "EQUIPMENT" : [i[0]],  //waiting for recordIDs
                     "Error" : ""
