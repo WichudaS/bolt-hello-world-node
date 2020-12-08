@@ -45,10 +45,14 @@ const dr = require('./dr');
 const app = express();
 // const db = fs.db();
 
+
+//===================================Airtable variables===================================
 const apiUrl = 'https://slack.com/api';
 const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
 const baseWR = new Airtable(process.env.AIRTABLE_API_KEY).base("appUmch1aSmkh0ZI8");  //base "DR.&WR."
+const baseSlackLog = new Airtable(process.env.AIRTABLE_API_KEY).base("appzIDHzu9Ww4Wtb3");  //base "Slack activity logs"
 
+//========================================================================================
 
   /*
  * Parse application/x-www-form-urlencoded && application/json
@@ -561,15 +565,74 @@ app.post('/integromat/hooks', async function(req,res) {
    
   console.log("---------------Integromat WEBHOOKS REQUEST ENDS HERE---------------"); 
 
-  var { docType, fileUpdated } = req.body;
+  //check if it is Document process?
+  if(req.body.docType) {
+    var { docType, fileUpdated } = req.body;
 
-  switch (docType) {
-    case "DR (Daily Report)":
-      var {date, name, formID, number, status, pdfLink, project, GGDFolder, approveData, submissionID, publishedChannel} = req.body;
-      
-      //check if it's not a fileUpdate
-      if (!fileUpdated) {
-        console.log(`★ New DR Approved from PM, Save Data to Airtable, Update DB, send publish messages`);
+    switch (docType) {
+      case "DR (Daily Report)":
+        var {date, name, formID, number, status, pdfLink, project, GGDFolder, approveData, submissionID, publishedChannel} = req.body;
+
+        //check if it's not a fileUpdate
+        if (!fileUpdated) {
+          console.log(`★ New DR Approved from PM, Save Data to Airtable, Update DB, send publish messages`);
+            //Route 1. save to Airtable  ★ waiting for approve
+            //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
+            // console.log(`★ save to Airtable`);
+            //--------------------------------------------------------------------------------------
+            //Route 2. update DB
+            console.log(`★ update DR DB`);
+            let DRApproveData = {
+              "status": status,
+              "pdfLink": pdfLink,  
+              "approveData": {
+                "approverSlackID": approveData.approverSlackID,
+                "approveDate": approveData.approveDate,
+                "approveResult": approveData.approveResult,
+                "approveComment": approveData.approveComment
+              },
+              "GGDFolder": GGDFolder,
+              "fileUpdated": fileUpdated
+            };
+
+            const DRApproveResult = await fs.DRListDocRef(project, number).update(DRApproveData);
+            console.log(DRApproveResult);
+
+            //get DBData
+            console.log(`★ Get all this DR Data from DB to form a publish message`);
+
+            DRApproveData = await fs.DRListDocRef(project, number).get().then(documentSnapshot => {
+              let fields = documentSnapshot.data();
+              return fields;
+            })
+            console.log(`★ data from DB = `);
+            console.log(JSON.stringify(DRApproveData));
+
+
+            //send published message according to status
+            console.log(`★ send published message according to status`);
+
+            for (const channel of DRApproveData.publishedChannel) {
+              console.log(`★ channel to post = ${channel}`);
+              let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drPublishedMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
+
+              console.log(`★ Publish message POSTED, here is a result =\n `);
+              console.log(postResult.data);
+            }
+
+            //if ApproveResult is 'AN', send comment message to SE
+            if(DRApproveData.approveData.approveResult == "AN") {
+              console.log(`★ "AN" case, send DM back to SE to edit the submission, too.`);
+              let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drCommentMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)));
+
+              console.log(`★ DM Comment to submitter, here is a result =\n `);
+              console.log(postResult.data);
+            }
+
+        } 
+        else {
+          console.log(`Someone edit a file after it is was approved!, send notification message to published channel`);
+
           //Route 1. save to Airtable  ★ waiting for approve
           //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
           // console.log(`★ save to Airtable`);
@@ -577,99 +640,44 @@ app.post('/integromat/hooks', async function(req,res) {
           //Route 2. update DB
           console.log(`★ update DR DB`);
           let DRApproveData = {
-            "status": status,
             "pdfLink": pdfLink,  
-            "approveData": {
-              "approverSlackID": approveData.approverSlackID,
-              "approveDate": approveData.approveDate,
-              "approveResult": approveData.approveResult,
-              "approveComment": approveData.approveComment
-            },
             "GGDFolder": GGDFolder,
             "fileUpdated": fileUpdated
           };
-  
+
           const DRApproveResult = await fs.DRListDocRef(project, number).update(DRApproveData);
           console.log(DRApproveResult);
-  
+
           //get DBData
           console.log(`★ Get all this DR Data from DB to form a publish message`);
-  
+
           DRApproveData = await fs.DRListDocRef(project, number).get().then(documentSnapshot => {
             let fields = documentSnapshot.data();
             return fields;
           })
           console.log(`★ data from DB = `);
           console.log(JSON.stringify(DRApproveData));
-          
-  
-          //send published message according to status
-          console.log(`★ send published message according to status`);
-          
+
+          //send published notification message
+          console.log(`★ send published notification message`);
+
           for (const channel of DRApproveData.publishedChannel) {
-            console.log(`★ channel to post = ${channel}`);
-            let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drPublishedMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
-    
+            let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drFileUpdateMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
+
             console.log(`★ Publish message POSTED, here is a result =\n `);
             console.log(postResult.data);
+
           }
-  
-          //if ApproveResult is 'AN', send comment message to SE
-          if(DRApproveData.approveData.approveResult == "AN") {
-            console.log(`★ "AN" case, send DM back to SE to edit the submission, too.`);
-            let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drCommentMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)));
-      
-            console.log(`★ DM Comment to submitter, here is a result =\n `);
-            console.log(postResult.data);
-          }
-          
-      } 
-      else {
-        console.log(`Someone edit a file after it is was approved!, send notification message to published channel`);
-
-        //Route 1. save to Airtable  ★ waiting for approve
-        //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
-        // console.log(`★ save to Airtable`);
-        //--------------------------------------------------------------------------------------
-        //Route 2. update DB
-        console.log(`★ update DR DB`);
-        let DRApproveData = {
-          "pdfLink": pdfLink,  
-          "GGDFolder": GGDFolder,
-          "fileUpdated": fileUpdated
-        };
-
-        const DRApproveResult = await fs.DRListDocRef(project, number).update(DRApproveData);
-        console.log(DRApproveResult);
-
-        //get DBData
-        console.log(`★ Get all this DR Data from DB to form a publish message`);
-
-        DRApproveData = await fs.DRListDocRef(project, number).get().then(documentSnapshot => {
-          let fields = documentSnapshot.data();
-          return fields;
-        })
-        console.log(`★ data from DB = `);
-        console.log(JSON.stringify(DRApproveData));
-
-        //send published notification message
-        console.log(`★ send published notification message`);
-        
-        for (const channel of DRApproveData.publishedChannel) {
-          let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drFileUpdateMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
-  
-          console.log(`★ Publish message POSTED, here is a result =\n `);
-          console.log(postResult.data);
-          
         }
-      }
 
-    break;
-  
-    default:
       break;
-  }
 
+      default:
+        break;
+    }
+  
+  }
+  
 
 
 
@@ -727,7 +735,62 @@ app.post('/slack/events' , async(req, res) => {
     const event = req.body.event;
     console.log(`★ event = ${JSON.stringify(event)}`);
 
-    //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable'
+    //Save every HUMAN messages in every channel to Airtable ==============================================
+    if(event.type == "message" && !(event.subtype=="bot_message") && !(event.hidden) && !(req.body.hidden)) {
+      console.log(`★ Save every message in every channel to Airtable for analytics`);
+      res.sendStatus(204);
+      
+      var actType = event.type;
+      var actSubtype = event.subtype;
+      var text = event.text;
+      var dateTime = dateFormat ("isoDateTime").split("+")[0];
+      var poster = event.user;
+      var channel = event.channel;
+      var attachments = event.attachments ? event.attachments[0].text || event.attachments[0].fallback: "";
+      var fileAttachments = event.files ? event.files[0].name : "";
+
+      //if message is shared => write in text 
+      if(event.attachments && !(event.text)) {
+        if(event.attachments[0].is_share == true) {
+          text = "แชร์ข้อความ";
+        }
+      }
+
+      //if file is shared => write in text 
+      if(event.files && !(event.text)) {
+          text = "แชร์ไฟล์";
+      }
+      
+
+      var eventLayout = {
+        "fields": {
+          "Activity Type": actType,
+          "Avtivity Subtype": actSubtype,
+          "Text": text,
+          "Posted time": dateTime,
+          "Poster ID": poster,
+          "Channel ID": channel,
+          "Shared message" : attachments,
+          "File attachments" : fileAttachments
+        }
+      };
+
+
+      console.log(`★ event layout to be saved =`);
+      console.log(JSON.stringify(eventLayout));
+
+      //create new record in Airtable
+      let recordCreatedResult = await fn.AT_createRecordsWithRecIDOutput(baseSlackLog, "Message logs", [eventLayout], true, "Poster ID")
+      console.log(`★ recordcreateresult = `);
+      console.log(recordCreatedResult);
+
+
+    }
+
+
+
+    
+    //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable' ======================
     if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
       console.log("★ CASE: Save jibble message to Airtable");
       res.sendStatus(204);
@@ -997,7 +1060,7 @@ app.post('/slack/events' , async(req, res) => {
 
 
     }
-
+    
   }
   
   
