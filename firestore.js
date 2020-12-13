@@ -5,6 +5,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
 
 
 
@@ -61,8 +62,16 @@ function DRListDocRef(project, DRno) {
   return db.doc(DBPath);
 }
 
+
+//============================== Requested Budget ===============================
+function RBPrepopURLDocRef(user_id) {
+  let DBPath = `cache/${user_id}/RB/pre-populateURL`;
+  return db.doc(DBPath);
+}
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {db, DRPrepopURLDocRef, DRListDocRef};
+module.exports = {db, 
+  DRPrepopURLDocRef, DRListDocRef, 
+  RBPrepopURLDocRef};
 
 
 
