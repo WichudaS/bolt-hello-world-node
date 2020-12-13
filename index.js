@@ -52,6 +52,8 @@ const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXt
 const baseWR = new Airtable(process.env.AIRTABLE_API_KEY).base("appUmch1aSmkh0ZI8");  //base "DR.&WR."
 const baseSlackLog = new Airtable(process.env.AIRTABLE_API_KEY).base("appzIDHzu9Ww4Wtb3");  //base "Slack activity logs"
 
+
+
 //========================================================================================
 
   /*
@@ -696,7 +698,7 @@ app.post('/slack/events' , async(req, res) => {
       console.log("----------req.body.type----------");   
       console.log(req.body.type);    
       console.log("----------req.body----------");   
-      console.log(req.body);  
+      // console.log(req.body);  
       console.log("----------req.body.string----------");   
       console.log(JSON.stringify(req.body)); 
       console.log("----------req.body.context----------");   
@@ -1146,7 +1148,7 @@ app.post('/slack/commands', async(req, res) => {
       "misc": {
         "DRProjectQuery":"",
         "DRDateQuery":"",
-        "DRPrepopulatedURL":""
+        "DRPrepopulatedURL":"",
       }
     };
 
@@ -1154,6 +1156,73 @@ app.post('/slack/commands', async(req, res) => {
     console.log(DRcache);
 
   }
+
+  //if text contains 'rb' => send RB message + create RB database cache document
+  else if (text.includes("rb") || text.includes("RB") || text.includes("requested budget") || text.includes("Requested Budget") || text.includes("Requested budget") || text.includes("REQUESTED BUDGET")) {
+    console.log("==SEND RB MESSAGE==");
+    res.sendStatus(204);
+    
+    let postedModalResult = await msg.rbMsg(user_id, trigger_id)
+    .then(result => {
+      console.log(`Modal posted result`);
+      console.log(JSON.stringify(result.data));
+      return result.data;
+    })
+    .catch(err => {
+      console.error(err);
+    })
+
+    //create cache document in Firestore
+    //const RB_prepopDocPath = `cache/${user_id}/RB/pre-populateURL`;
+    var RBJotUrl = {
+      "head": "https://form.jotform.com/203231001397038",
+      "day": {
+        "date[month]": today.split("-")[1].trim(),
+        "date[day]": today.split("-")[2].trim(),
+        "date[year]": today.split("-")[0].trim()
+      },
+      "refDocument": {
+        "refDoc": "",
+        "workName": ""
+      },
+      "description": {
+        "q54_description[0][0]": ""
+      },
+      "resource": {
+        "q28_resource[0][0]": ""
+      },
+      "sumBudget": {
+        "accOriginalBudget": "",
+        "accOrderedBudget": ""
+      },
+      "CE": {
+        "CEName[first]": "",
+        "CEName[last]": "",
+        "CEPosition": "วิศวกรควบคุมต้นทุน",
+        "CESlackID": ""
+      },
+      "PM": {
+        "PMName[first]": "",
+        "PMName[last]": "",
+        "PMPosition": "ผู้จัดการโครงการ",
+        "PMSlackID": ""
+      },
+      "AirtableData": {
+        "MS400ID": "",
+        "viewName": ""
+      },
+      "misc": {
+        "RBProjectQuery":"",
+        "RBRefDocQuery":"",
+        "RBPrepopulatedURL":"",
+      }
+    };
+
+    const RBcache = await fs.RBPrepopURLDocRef(user_id).set(RBJotUrl);
+    console.log(RBcache);
+
+  }
+
   //else => send help message
   else {
     console.log("==SEND HELP MESSAGE==");
@@ -1181,7 +1250,31 @@ app.post('/slack/actions', async(req, res) => {
       console.log(req.body.payload);  
       console.log("---------------ACTION REQUEST ENDS HERE---------------");     
       
-      const {type} = JSON.parse(req.body.payload)
+      const payload = JSON.parse(req.body.payload);
+
+      let { type, token, trigger_id, user, actions, response_url, container, view, message } = JSON.parse(req.body.payload);
+
+      const metadata = view ? JSON.parse(view.private_metadata) : ""
+      const viewName = metadata? metadata.viewName : "";
+      const channel_id = container? container.channel_id : metadata? metadata.channel_id : "";
+      const user_id = user? user.id : "";  
+      const block_id = actions? actions[0].block_id : "";
+      const action_id = actions? actions[0].action_id : "";
+
+      const submissionValue = view? view.state.values : "";
+      
+      // console.log({ token, user, actions });
+      console.log(`★ viewName = ${viewName}`);
+      console.log(`★ trigger_id = ${trigger_id}`);
+      console.log("★ response_url = " + response_url);
+      console.log("★ block_id = " + block_id);
+      console.log("★ action_id = " + action_id);
+      console.log("★ user_id = "+ user_id); 
+      console.log(`★ channel_id = ${channel_id}`);
+      console.log(`★ submissionValue = ${JSON.stringify(submissionValue)}`);
+      console.log(`★ metadata = ${JSON.stringify(metadata)}`);
+      console.log(" ");
+      console.log(" ");
   
 
   //-----DR DECLARE VARIABLE-----
@@ -1192,514 +1285,1038 @@ app.post('/slack/actions', async(req, res) => {
 
   
   //-----RUN-----
+  /*
 
-  switch(type) {
-    case "block_actions":
-      let { token, trigger_id, user, actions, response_url, container, view, message } = JSON.parse(req.body.payload);
-      const channelID = container.channel_id || JSON.parse(view.private_metadata).channel_id;
-      const user_id = user.id;  
-      const block_id = actions[0].block_id;
-      const action_id = actions[0].action_id;
-      // const 
-      // const value = 
+    ยกเลิกการใช้ switch statement โดยไม่จำเป็น เพราะเกิดปัญหาเรื่องการ declare parameter ที่ชื่อซ้ำ 
+    เพราะมันถือว่าเป็น local ระดับเดียวกัน เลยใช้ซ้ำไม่ได้
+    (โปรแกรมไม่ให้ reassign ค่าข้าม case ด้วย เหมือน parameter มันใช้ไม่ได้ไปเลย)
+
+  */
+  
+  //if `type` is not empty => `Do something!`
+  if(type) {
+    //block action type => all interactions  (except modal submission)
+    if(type == "block_actions") {
+      //block_id controls various *specific actions* that grouped by block_id
       
-      console.log({ token, user, actions });
-      console.log(`★ trigger_id = ${trigger_id}`);
-      console.log("★ response_url = " + response_url);
-      console.log("★ block_id = " + block_id);
-      console.log("★ action_id = " + action_id);
-      console.log("★ user_id = "+ user_id); 
-      console.log(`★ channelID = ${channelID}`);
-
-      //block_id controls various *specific actions* that grouped by block_id 
-      switch (block_id) {
-        //PM interacts in DR Approve Requested Message
-        case "DR_approveAction":
-
-          switch (action_id) {
-            //PM hit 'Approved' button => 1.send Jotform link for PM to sign and 2.delete approve requested message
-            case "DR_approve":
-              console.log(`★ PM approved, redirect to Jotform Edit submission page`);
-              //Direct to Edit submissionURL link
-              res.sendStatus(204); //Ack()
-
-              //Delete message
-              let delmsg = msg.delMsg(response_url)
-              console.log(delmsg);
-            break;
-            //PM hit 'Reject' button => 1.pop up modal to PM to add comment  and 2.delete approve requested message
-            case "DR_reject":
-              console.log(`★ PM rejected, pop up modal to add comment & carry data to be update to DB over modal metadata`);
-              res.status(200).write(""); // ack 
-
-              //structure data for modal to be carry over
-              let metadata = {
-                "DRno": message.blocks[1].fields[1].text.split("\n")[1],
-                "project": message.blocks[1].fields[1].text.split("\n")[1].split("_")[0]
-              }
-
-              //send Comment input modal to PM
-              let postModalResult = await axios.post(`https://slack.com/api/views.open`, qs.stringify(msg.drRejectCommentMsg(trigger_id, process.env.SLACK_BOT_TOKEN, metadata)));
-              console.log(`★ Modal posted, here is a result =`);
-              console.log(postModalResult.data);
-
-              //Delete message
-              let delAppMsg = msg.delMsg(response_url)
-              console.log(delAppMsg);
-            break;
-
-            default:
-              break;
-          }
-
-        break;  
-        
+      //DR interactions=====
+      if(block_id.includes("DR_")) {
         //User interacts in DR prepopulatedURL input modal
-        case "DR_inputModal":
-          
-          switch (action_id) {
-            //User select project in DR input modal => 1.query project information, PM&SE info then 2.Update cache
-            case "DR_projectList":
-              res.sendStatus(204);
+        if(block_id == "DR_inputModal") {
+          //User select project in DR input modal => 1.query project information, PM&SE info then 2.Update cache
+          if(action_id == "DR_projectList") {
+            res.sendStatus(204);
 
-              let DRProjectData = {
-                "SE": {
-                  "SEName[first]": "",
-                  "SEName[last]": "",
-                  "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
-                  "SESlackID": ""
-                },
-                "PM": {
-                  "PMName[first]": "",
-                  "PMName[last]": "",
-                  "PMPosition": "ผู้จัดการโครงการ"
-                },
-                "misc.DRProjectQuery": ""
-              };
+            let DRProjectData = {
+              "SE": {
+                "SEName[first]": "",
+                "SEName[last]": "",
+                "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+                "SESlackID": ""
+              },
+              "PM": {
+                "PMName[first]": "",
+                "PMName[last]": "",
+                "PMPosition": "ผู้จัดการโครงการ"
+              },
+              "misc.DRProjectQuery": ""
+            };
 
-              DRProjectQuery = actions[0].selected_option.value;
-              console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
-              DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
+            DRProjectQuery = actions[0].selected_option.value;
+            console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
+            DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
 
-              DRProjectData.SE.SESlackID = user.id;
-              console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
+            DRProjectData.SE.SESlackID = user.id;
+            console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
 
-              // get PM's ID
-              let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
-              let PMRecordID = "";
-              if(projectData) {
-                PMRecordID = projectData["ชื่อ PM (จากรายชื่อพนักงาน)"]
-              }
-              //find PM's info (firstname, lastname)
-              let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
-              console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
-              //store data into object
-              if(PMInfo) {
-                DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
-                DRProjectData.PM["PMName[last]"] = PMInfo["ชื่อ-สกุล"].split(" ")[1].trim()
-              }
-
-              //find SE info with SE slackID
-              let SEData = await fn.DR_searchPPfrominfo(baseDR, "รายชื่อพนักงาน", `{Slack USER ID}="${DRProjectData.SE.SESlackID}"`)
-              if(SEData) {
-                DRProjectData.SE["SEName[first]"] = SEData["ชื่อ-สกุล"].split(" ")[0].trim()                                      
-                DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
-              }
-
-              console.log("★ DRProjectData =");
-              console.log(JSON.stringify(DRProjectData));
-
-              //update to DB
-              let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
-              console.log(DRcacheUpdate);
-            break;
-            
-            //User select date in DR input modal => 1.parse date information then 2.Update cache
-            case "DR_date":
-              res.sendStatus(204);
-
-              let DRDateData = {
-                "day": {
-                  "input22[month]": "",
-                  "input22[day]": "",
-                  "input22[year]": ""
-                },            
-                "misc.DRDateQuery": ""
-              };
-
-              // res.sendStatus(204); //ack and end
-              DRDateQuery = actions[0].selected_date
-              console.log(`★ DRDateQuery = ${DRDateQuery}`);
-              DRDateData["misc.DRDateQuery"] = DRDateQuery;
-
-              //store data into object 
-              DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
-              DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
-              DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
-
-              console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
-              console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
-              console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
-
-              console.log("★ DRDateData =");
-              console.log(JSON.stringify(DRDateData));
-
-              //Update DB
-              let DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
-              console.log(DRcacheDateUpdate);
-            break;
-          
-            //User clicked 'URL for ios' in DR input modal => 1.close this modal, 2.send URL message
-            // case "sendDRurlForIos":
-            //   res.sendStatus(200);
-
-            //   console.log(`★ User clicked 'Requested URL for ios' in DR input modal => 1.close this modal, 2.send URL message`);
-              
-            //   //1.close DR input modal
-            //   console.log(`★ 1.close DR input modal`);
-
-            //   //2.send URL message
-            //   console.log(`★ 2.send URL message`);
-            //   let messageResult = await axios.post(`https://slack.com/api/chat.postMessage`, qs.stringify({
-            //     "token": process.env.SLACK_BOT_TOKEN,
-            //     // "response_type": "ephemeral",
-            //     "channel": `${channelID}`,
-            //     "text": "This is your URL"
-            //   }));
-            //   console.log(`★ URL message result = ${JSON.stringify(messageResult.data)}`);
-              
-            //   res.end();
-            // break
-
-            default:
-              break;
-          }
-
-        break;
-
-        default:
-        break;
-      }
-      
-      //THIS action_id controls various *common actions* which DOES NOT have  block_id 
-      switch(action_id) {
-        //User hit 'delete message' button in help message => delete the message
-        case "deletemessage":
-          res.status(200);
-          res.write(""); //=ack();
-          // code block
-          console.log("★ delete message case");
-          //res.status(200); //=ack();
-          let result = await msg.delMsg(response_url);
-          console.log(result.data);
-          res.end();
-        break;
-        //User hit 'Open Daily Report' button in help messsage => send DR modal
-        case "open_drMsg":
-          res.sendStatus(204);
-          console.log("★ open DR message case");
-          // res.status(200); //=ack();
-
-          //send DR message
-          msg.drMsg(user_id, channelID, trigger_id, process.env.SLACK_BOT_TOKEN)
-          .then(result => {
-            console.log(result.data)
-            return console.log("★ Modal posted");
-          
-          })
-          .catch(err => {
-            console.error(err);
-          })
-
-
-          //create cache for pre-populateURL
-          var DRJotUrl = {
-            "head": "https://form.jotform.com/201670438940455",
-            "day": {
-              "input22[month]": "",
-              "input22[day]": "",
-              "input22[year]": ""
-            },
-            "time": {
-              "timeSchedule": "08.00-17.00"
-            },
-            "SE": {
-              "SEName[first]": "",
-              "SEName[last]": "",
-              "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
-              "SESlackID": ""
-            },
-            "PM": {
-              "PMName[first]": "",
-              "PMName[last]": "",
-              "PMPosition": "ผู้จัดการโครงการ"
-            },
-            "staff": {
-              "q146_staffTable[0][0]": ""
-            },
-            "dc": {
-              "q39_DCTable[0][0]": ""
-            },
-            "progress100": {
-              "q33_input33[0][0]":""
-            },
-            "misc": {
-              "DRProjectQuery":"",
-              "DRDateQuery":"",
-              "DRPrepopulatedURL":""
+            // get PM's ID
+            let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
+            let PMRecordID = "";
+            if(projectData) {
+              PMRecordID = projectData["ชื่อ PM (จากรายชื่อพนักงาน)"]
             }
-          };
-          const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
-          console.log(DRcache);
+            //find PM's info (firstname, lastname)
+            let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
+            console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
+            //store data into object
+            if(PMInfo) {
+              DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+              DRProjectData.PM["PMName[last]"] = PMInfo["ชื่อ-สกุล"].split(" ")[1].trim()
+            }
 
-        break;
-      }
+            //find SE info with SE slackID
+            let SEData = await fn.DR_searchPPfrominfo(baseDR, "รายชื่อพนักงาน", `{Slack USER ID}="${DRProjectData.SE.SESlackID}"`)
+            if(SEData) {
+              DRProjectData.SE["SEName[first]"] = SEData["ชื่อ-สกุล"].split(" ")[0].trim()                                      
+              DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
+            }
 
-    break;
+            console.log("★ DRProjectData =");
+            console.log(JSON.stringify(DRProjectData));
 
-    case "view_submission":
-      
-      const payload = JSON.parse(req.body.payload);
+            //update to DB
+            let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
+            console.log(DRcacheUpdate);
+          }
+          //User select date in DR input modal => 1.parse date information then 2.Update cache
+          else if(action_id == "DR_date") {
+            res.sendStatus(204);
 
-      const metaData = JSON.parse(payload.view.private_metadata);
-      console.log(`★ metaData = ${JSON.stringify(metaData)}`);
+            let DRDateData = {
+              "day": {
+                "input22[month]": "",
+                "input22[day]": "",
+                "input22[year]": ""
+              },            
+              "misc.DRDateQuery": ""
+            };
 
-      const viewName = metaData.viewName;
-      console.log(`★ viewName = ${viewName}`);
-      const channel_id = metaData.channel_id; 
-      console.log(`★ channel_id = ${channel_id}`);
-      const userSubmitID = payload.user.id;
-      console.log(`★ userSubmitID = ${userSubmitID}`);
-      const submissionValue = payload.view.state.values;
-      console.log(`★ submissionValue = ${JSON.stringify(submissionValue)}`);
-        
-      
-
-      //Specific actions only for view submission that has 'viewName' in private_metadata
-      switch(viewName) {
-        //User hit 'Submit' button in DR input modal => 1.Verify project name & date, if "OK" then 2.Generate pre-populated Jotform URL 3.Push new view with prepopulated Jotform URL
-        case "DR_prepopInput":
-          
-          console.log("★ case DR_pre-populate URL");
-          let today = new Date();
-
-          //pop-up warning message if 'project' is not selected , OR 'date' is in the future
-          //1. get data from DB => return datafields
-          let data = await fs.DRPrepopURLDocRef(userSubmitID).get().then(documentSnapshot => {
-            let fields = documentSnapshot.data();
-            return fields;
-          })
-          console.log(`★ data from DB = `);
-          console.log(JSON.stringify(data));
-          
-          //2. check the date (if data.misc.DRDateQuery = "" => data.misc.DRDateQuery = date)
-          var date = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
-          let day = dateFormat(date, "yyyy-mm-dd");
-          
-          if(!data.misc.DRDateQuery) {
-            console.log(`★ There is no date from DB, assign date`);
-            data.misc.DRDateQuery = day;
+            // res.sendStatus(204); //ack and end
+            DRDateQuery = actions[0].selected_date
+            console.log(`★ DRDateQuery = ${DRDateQuery}`);
+            DRDateData["misc.DRDateQuery"] = DRDateQuery;
 
             //store data into object 
-            data.day["input22[year]"] = day.split("-")[0].trim()
-            data.day["input22[month]"] = day.split("-")[1].trim()
-            data.day["input22[day]"] = day.split("-")[2].trim()
-            
-            console.log(`★ input22[day] = ${data.day["input22[day]"]}`);
-            console.log(`★ input22[month] = ${data.day["input22[month]"]}`);
-            console.log(`★ input22[year] = ${data.day["input22[year]"]}`);
-            
+            DRDateData.day["input22[year]"] = DRDateQuery.split("-")[0].trim()
+            DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
+            DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
+
+            console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
+            console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
+            console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
+
+            console.log("★ DRDateData =");
+            console.log(JSON.stringify(DRDateData));
+
+            //Update DB
+            let DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
+            console.log(DRcacheDateUpdate);
           }
-          
-          //2.5 Store project & date variable for output message
-          let drProject = data.misc.DRProjectQuery;
-          let drDate = data.misc.DRDateQuery 
+        }
+        //PM interacts in DR Approve Requested Message
+        else if(block_id == "DR_approveAction") {
+          //PM hit 'Approved' button => 1.send Jotform link for PM to sign and 2.delete approve requested message
+          if(action_id == "DR_approve") {
+            console.log(`★ PM approved, redirect to Jotform Edit submission page`);
+            //Direct to Edit submissionURL link
+            res.sendStatus(204); //Ack()
 
-          //3. check, get other infos, save URL to Firestore cache, push new view with prepopulated Jotform URL
-          if(!(data.misc.DRProjectQuery) || (new Date(data.misc.DRDateQuery)>today)) {
-            console.log("-----error case, no project chosen ,or date is in the future");
-            res.send(await msg.drErrorMsg(userSubmitID, channel_id))
-            console.log('★ msg sent!');
+            //Delete message
+            let delmsg = msg.delMsg(response_url)
+            console.log(delmsg);
           }
-          else{
-            console.log("★ input checked! continue");
+          //PM hit 'Reject' button => 1.pop up modal to PM to add comment  and 2.delete approve requested message
+          else if(action_id == "DR_reject") {
+            console.log(`★ PM rejected, pop up modal to add comment & carry data to be update to DB over modal metadata`);
+            res.status(200).write(""); // ack 
 
-            //NOT USED
-            // console.log(`★ Clear modal view(s)`);
-            // res.send({
-            //   "response_action": "clear"
-            // });
+            //structure data for modal to be carry over
+            let metadata = {
+              "DRno": message.blocks[1].fields[1].text.split("\n")[1],
+              "project": message.blocks[1].fields[1].text.split("\n")[1].split("_")[0]
+            }
+
+            //send Comment input modal to PM
+            let postModalResult = await axios.post(`https://slack.com/api/views.open`, qs.stringify(msg.drRejectCommentMsg(trigger_id, process.env.SLACK_BOT_TOKEN, metadata)));
+            console.log(`★ Modal posted, here is a result =`);
+            console.log(postModalResult.data);
+
+            //Delete message
+            let delAppMsg = msg.delMsg(response_url)
+            console.log(delAppMsg);
+          }
+        }
+        
+      }
+      //RB interactions=====
+      else if(block_id.includes("RB_")) {
+        //User interacts in DR prepopulatedURL input modal
+        if(block_id.includes("RB_inputModal")) {
+          //User select project
+          if(block_id == "RB_inputModal-project") {
+            res.sendStatus(204);
+            console.log(`★ RB project has been selected, update cache and RB modal`);
+
+            let { ABB, ID } = JSON.parse(actions[0].selected_option.value)
+            //data layout to be updated in Firestore (ref:RBJotUrl)
+            let data = {
+              "sumBudget": {
+                "accOriginalBudget": "",
+                "accOrderedBudget": ""
+              },
+              "CE": {
+                "CEName[first]": "",
+                "CEName[last]": "",
+                "CEPosition": "วิศวกรควบคุมต้นทุน",
+                "CESlackID": ""
+              },
+              "PM": {
+                "PMName[first]": "",
+                "PMName[last]": "",
+                "PMPosition": "ผู้จัดการโครงการ",
+                "PMSlackID": ""
+              },
+              "AirtableData": {
+                "MS400ID": "",
+                "viewName": "Purchase Requests"
+              },
+              "misc.RBProjectQuery": ABB
+            };
             
-            //find other infos
-            //1.get DC & staff data from Airtable
-            const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${data.misc.DRDateQuery}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
-            if(staffAndDCData) {
+            //get datas
+            //Project data
+            let projectData = await baseDR("รายละเอียดโครงการ").find(ID).then(record => {return record.fields});
+            // console.log(`★ projectData`);          
+            // console.log(projectData);
+            if(projectData) {
+              data.AirtableData.MS400ID = projectData["MS400 baseID"];
+            }
+            //PMData
+            let PMData = await baseDR("รายชื่อพนักงาน").find(projectData["ชื่อ PM (จากรายชื่อพนักงาน)"][0]).then(record => {return record.fields});
+            // console.log(`★ PMData`);
+            // console.log(PMData);
+            if(PMData) {
+              data.PM["PMName[first]"] = PMData["ชื่อ-สกุล"].split(" ")[0].trim();
+              data.PM["PMName[last]"] = PMData["ชื่อ-สกุล"].split(" ")[1].trim();
+              data.PM.PMSlackID = PMData["Slack USER ID"];
+            }
+            //CEData
+            let CEData = await baseDR("รายชื่อพนักงาน").select({"view": "Grid view", "maxRecords": 1, "filterByFormula": `{Slack USER ID} = "${user_id}"`}).all();  //[]
+            if(CEData) {
+              data.CE["CEName[first]"] = CEData[0].fields["ชื่อ-สกุล"].split(" ")[0].trim();          
+              data.CE["CEName[last]"] = CEData[0].fields["ชื่อ-สกุล"].split(" ")[1].trim();
+              data.CE.CESlackID = user_id;
+            }
+            //sumRB
+            let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(`${projectData["MS400 baseID"]}`)
+            let RBData = await baseMS400("MS400").select({"view": "Requested Budgets", "fields":["ID", "Original BG Amount", "Ordered BG Amount"]}).all().then((records) => {return records.map((n) => {return n.fields})})
+            // console.log(`★ RBData`);
+            // console.log(RBData);
+            if(RBData) {
+              data.sumBudget.accOriginalBudget = RBData.reduce((sum, rec)=> {return {"Original BG Amount": sum["Original BG Amount"] + rec["Original BG Amount"]} })["Original BG Amount"]
+              data.sumBudget.accOrderedBudget = RBData.reduce((sum, rec)=> {return {"Ordered BG Amount": sum["Ordered BG Amount"] + rec["Ordered BG Amount"]} })["Ordered BG Amount"]
+            }
+
+            console.log(`★ summary of cache data to be updated`);
+            console.log(JSON.stringify(data));
+
+
+            //query and add `PR list` into msg
+            //query `PR list` in MS400
+            let PRData = await baseMS400("MS400").select({"view": data.AirtableData.viewName, "fields": ["PR No"]}).all()
+            .then((records) => {
+              //get only unique data
+              let uniqueData = {}
+              records.forEach((record) => {
+                uniqueData[`${record.fields["PR No"]}`] = "";
+              });
+
+              return Object.keys(uniqueData);
+            });
+            console.log(`★ PRData`);
+            console.log(PRData);
+
+            //added into msg
+            //structure data
+            let PRoptions = PRData.map((n) => {
               
-              if(Object.keys(staffAndDCData.staff).length>0) {
-                console.log(`★ staffData from Airtable = ${JSON.stringify(staffAndDCData.staff)}`);
-                data.staff = staffAndDCData.staff;
-                console.log(`★ Updated staff data`);
+              return {
+                "text": {
+                  "type": "plain_text",
+                  "text": n,
+                  "emoji": true
+                },
+                "value": n
               }
-              else {
-                console.log("★ found no staff data = delete data.staff key");
-                delete data.staff;
-              }
-              
-              if(Object.keys(staffAndDCData.dc).length>0) {
-                console.log(`★ DCData from Airtable = ${JSON.stringify(staffAndDCData.dc)}`);
-                data.dc = staffAndDCData.dc;
-                console.log(`★ DC data updated`);
-              }
-              else {
-                console.log("★ found no DC data = delete data.dc key");
-                delete data.dc;
-              }
-              
-            }
-            else{
-              console.log(`★ No staff or DC data on this day, delete staff and dc keys`);
-              delete data.staff;
-              delete data.dc;
-            }
+            });
+            // console.log(`layouted projects = `);
+            // PRoptions.forEach(n => console.log(JSON.stringify(n)));
+
+            let PRListSection = {
+                "type": "input",
+                "block_id": "RB_inputModal-PR",
+                "dispatch_action": true,
+                "element": {
+                  "type": "static_select",
+                  "placeholder": {
+                    "type": "plain_text",
+                    "text": "เลือกโครงการ",
+                    "emoji": true
+                  },
+                  "options": PRoptions
+                },
+                "label": {
+                  "type": "plain_text",
+                  "text": ":memo:  เลือกเอกสารอ้างอิง",
+                  "emoji": true
+                }
+              };
             
-            //2.get progress100% (ยังไม่ทำเพราะ base เก็บข้อมูล DR ยังไม่มา)
-            const progressData = undefined;
-            if(progressData) {
-              console.log(`★ There are progress 100% from other DR`);
-            }
-            else {
-              console.log(`★ No progress100% this week, delete progress tree`);
-              delete data.progress100;
-            }
-            
-            //delete unused data
-            delete data.misc;
-            console.log(`★ finished data = ${JSON.stringify(data)}`)
-            
-            //transform and merge into URL
-            const key = Object.keys(data)
-            console.log(`★ data keys = ${key}`);
+            // let newModalView = await msg.rbMsgTemplate(user_id)
+            //test-- use the payload view
+            let newModalView = {"type": view.type, "title": view.title, "submit": view.submit, "close": view.close, "blocks": view.blocks, "private_metadata": view.private_metadata}
+            //update metadata
+            metadata.MS400baseID = projectData["MS400 baseID"];
+            newModalView.private_metadata = JSON.stringify(metadata);
 
-            //concat URL part from every keys except head
-            var URLparam = [];
-            for (var o in data) {
-              console.log(`★ data key = ${o}`);
-              if(o != "head") {
-                let entries = Object.entries(data[o]);
-                entries = entries.map(n => n.join("=")).join("&");
-                console.log(entries);
-                URLparam = URLparam.concat(entries);
-              }
-              else {
-                console.log(`★ data keys = head, do nothing`);
-              }
-            }
-            URLparam = URLparam.join("&")
-            console.log(`★ Finished URLparam = ${URLparam}`);
-
-            //merge URL
-            URL = `${data.head}?${URLparam}`
-            console.log(`★ URL = ${URL}`);
-            
-            //Shorten URL
-            let URLshort = await TinyURL.shorten(URL); 
-            console.log(`★ URLshort = ${URLshort}`);
-            
-            //save URL to Firestore cache
-            let DRcacheUpdate = await fs.DRPrepopURLDocRef(userSubmitID).update({"misc.DRPrepopulatedURL":URLshort});
-            console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
+            //add into msg blocks
+            newModalView.blocks = [...newModalView.blocks, PRListSection];
+            console.log(`new modal view =`);
+            console.log(JSON.stringify(newModalView));
 
 
 
-            //Push new modal view that contains PrepopulatedURL
-            console.log(`★ drProject = ${drProject}`);
-            console.log(`★ drDate = ${drDate}`);
-
-            // let pushURLviewResult = await axios.post(`https://slack.com/api/views.push`,msg.drPrepopulatedURL(userSubmitID, channel_id, drProject, drDate, URLshort));
-
-            // console.log(`★ pushURLviewResult = ${JSON.stringify(pushURLviewResult.data)}`);
+            //update modal
             try {
-              res.send(await msg.drPrepopulatedURL(userSubmitID, channel_id, drProject, drDate, URLshort));
-              console.log('★ New modal view pushed!');              
-            } catch (error) {
+              let args = {
+                "token": process.env.SLACK_BOT_TOKEN,
+                "view": JSON.stringify(newModalView),
+                "view_id": view.id
+              };
+
+              let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
+              console.log('★ New modal view pushed!'); 
+              console.log(updateModalResult.data)             
+            } 
+            catch (error) {
               console.error(error);
             }
 
-            /* NOT USED
-            //Send URL message
-            let responseURL = payload.response_urls[0].response_url;
-            console.log(`★ responseURL = ${responseURL}`);
+            //update cache (userID & Project abb)
+            let RBcacheDateUpdate = await fs.RBPrepopURLDocRef(user_id).update(data);
+            console.log(RBcacheDateUpdate);
+          }
+          //User `select refDoc`
+          else if(block_id == "RB_inputModal-PR") {
+            res.sendStatus(204);
+            console.log(`★ RB refDoc has been selected, update cache`);
+
+            
+            //data layout to be updated in Firestore (ref:RBJotUrl)
+            let PRdata = {
+              "refDocument.refDoc": actions[0].selected_option.value,     
+              "misc.RBRefDocQuery": actions[0].selected_option.value
+            };
 
 
+
+            //update modal
+            let data = {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "ข้อมูลครบแล้ว กด submit ได้เลยค่ะ :heavy_check_mark: "
+              }
+            };
+
+            //test-- use the payload view
+            let newModalView = {"type": view.type, "title": view.title, "submit": view.submit, "close": view.close, "blocks": view.blocks, "private_metadata": view.private_metadata}
+
+            //add into msg blocks
+            newModalView.blocks = [...newModalView.blocks, data];
+            console.log(`new modal view =`);
+            console.log(JSON.stringify(newModalView));
+
+
+            //update modal
             try {
+              let args = {
+                "token": process.env.SLACK_BOT_TOKEN,
+                "view": JSON.stringify(newModalView),
+                "view_id": view.id
+              };
 
-              
-              let URLmessageResult = await axios.post( `${responseURL}` , msg.drPrepopMsg(drProject, drDate, URLshort) );
-
-  
-              console.log(`★ URLmessageResult = ${JSON.stringify(URLmessageResult.data)}`);
-              console.log(`★ message posted`)
-            } catch (error) {
-              console.log(error);
-
+              let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
+              console.log('★ New modal view pushed!'); 
+              console.log(updateModalResult.data)             
+            } 
+            catch (error) {
+              console.error(error);
             }
-            */
+
+            //update cache
+            //update cache (userID & Project abb)
+            let RBcachePRUpdate = await fs.RBPrepopURLDocRef(user_id).update(PRdata);
+            console.log(RBcachePRUpdate);
+          }
+        }
+
+      }
+      
+      
+      //THIS action_id controls various *common actions* which DOES NOT have  block_id
+      //User hit 'delete message' button in help message => delete the message
+      else if(action_id == "deletemessage") {
+        res.status(200);
+        res.write(""); //=ack();
+        // code block
+        console.log("★ delete message case");
+        //res.status(200); //=ack();
+        let result = await msg.delMsg(response_url);
+        console.log(result.data);
+        res.end();
+
+      }
+      //User hit 'Minute of Meeting' button in help message => just acknowledge
+      else if(action_id == "open_momMsg") {
+        res.sendStatus(204);
+      }
+      //User hit 'Open Daily Report' button in help messsage => send DR modal
+      else if(action_id == "open_drMsg") {
+        res.sendStatus(204);
+        console.log("★ open DR message case");
+        // res.status(200); //=ack();
+
+        //send DR message
+        msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
+        .then(result => {
+          console.log(result.data)
+          return console.log("★ Modal posted");
+        
+        })
+        .catch(err => {
+          console.error(err);
+        })
+
+
+        //create cache for pre-populateURL
+        var DRJotUrl = {
+          "head": "https://form.jotform.com/201670438940455",
+          "day": {
+            "input22[month]": "",
+            "input22[day]": "",
+            "input22[year]": ""
+          },
+          "time": {
+            "timeSchedule": "08.00-17.00"
+          },
+          "SE": {
+            "SEName[first]": "",
+            "SEName[last]": "",
+            "SEPosition": "วิศวกรควบคุมงานก่อสร้าง",
+            "SESlackID": ""
+          },
+          "PM": {
+            "PMName[first]": "",
+            "PMName[last]": "",
+            "PMPosition": "ผู้จัดการโครงการ"
+          },
+          "staff": {
+            "q146_staffTable[0][0]": ""
+          },
+          "dc": {
+            "q39_DCTable[0][0]": ""
+          },
+          "progress100": {
+            "q33_input33[0][0]":""
+          },
+          "misc": {
+            "DRProjectQuery":"",
+            "DRDateQuery":"",
+            "DRPrepopulatedURL":""
+          }
+        };
+        const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
+        console.log(DRcache);
+
+      }
+      //User hit 'Open Requested Budget' button in help messsage => send RB modal
+      else if(action_id == "open_rbMsg") {
+        console.log("==SEND RB MESSAGE==");
+        res.sendStatus(204);
+        
+        await msg.rbMsg(user_id, trigger_id)
+        .then(result => {
+          console.log(result.data);
+          return console.log(`★ RB modal posted!`)
+        })
+        .catch(err => {
+          console.error(err);
+        })
+    
+        //create cache document in Firestore
+        //const DR_prepopDocPath = `cache/${user_id}/RB/pre-populateURL`;
+        var RBJotUrl = {
+          "head": "https://form.jotform.com/203231001397038",
+          "day": {
+            "date[month]": today.split("-")[1].trim(),
+            "date[day]": today.split("-")[2].trim(),
+            "date[year]": today.split("-")[0].trim()
+          },
+          "refDocument": {
+            "refDoc": "",
+            "workName": ""
+          },
+          "description": {
+            "q54_description[0][0]": ""
+          },
+          "resource": {
+            "q28_resource[0][0]": ""
+          },
+          "sumBudget": {
+            "accOriginalBudget": "",
+            "accOrderedBudget": ""
+          },
+          "CE": {
+            "CEName[first]": "",
+            "CEName[last]": "",
+            "CEPosition": "วิศวกรควบคุมต้นทุน",
+            "CESlackID": ""
+          },
+          "PM": {
+            "PMName[first]": "",
+            "PMName[last]": "",
+            "PMPosition": "ผู้จัดการโครงการ",
+            "PMSlackID": ""
+          },
+          "AirtableData": {
+            "MS400ID": "",
+            "viewName": ""
+          },
+          "misc": {
+            "RBProjectQuery":"",
+            "RBRefDocQuery":"",
+            "RBPrepopulatedURL":""
+          }
+        };
+    
+        const RBcache = await fs.RBPrepopURLDocRef(user_id).set(RBJotUrl);
+        console.log(RBcache);
+
+      }
+    }
+    //view_submission
+    else if(type == "view_submission") {
+      //Specific actions only for view submission that has 'viewName' in private_metadata
+     
+      //User hit 'Submit' button in DR input modal => 1.Verify project name & date, if "OK" then 2.Generate pre-populated Jotform URL 3.Push new view with prepopulated Jotform URL
+      if(viewName == "DR_prepopInput") {
+         
+        console.log("★ case DR_pre-populate URL");
+        let today = new Date();
+
+        //pop-up warning message if 'project' is not selected , OR 'date' is in the future
+        //1. get data from DB => return datafields
+        let data = await fs.DRPrepopURLDocRef(user_id).get().then(documentSnapshot => {
+          let fields = documentSnapshot.data();
+          return fields;
+        })
+        console.log(`★ data from DB = `);
+        console.log(JSON.stringify(data));
+        
+        //2. check the date (if data.misc.DRDateQuery = "" => data.misc.DRDateQuery = date)
+        var date = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
+        let day = dateFormat(date, "yyyy-mm-dd");
+        
+        if(!data.misc.DRDateQuery) {
+          console.log(`★ There is no date from DB, assign date`);
+          data.misc.DRDateQuery = day;
+
+          //store data into object 
+          data.day["input22[year]"] = day.split("-")[0].trim()
+          data.day["input22[month]"] = day.split("-")[1].trim()
+          data.day["input22[day]"] = day.split("-")[2].trim()
+          
+          console.log(`★ input22[day] = ${data.day["input22[day]"]}`);
+          console.log(`★ input22[month] = ${data.day["input22[month]"]}`);
+          console.log(`★ input22[year] = ${data.day["input22[year]"]}`);
+          
+        }
+        
+        //2.5 Store project & date variable for output message
+        let drProject = data.misc.DRProjectQuery;
+        let drDate = data.misc.DRDateQuery 
+
+        //3. check, get other infos, save URL to Firestore cache, push new view with prepopulated Jotform URL
+        if(!(data.misc.DRProjectQuery) || (new Date(data.misc.DRDateQuery)>today)) {
+          console.log("-----error case, no project chosen ,or date is in the future");
+          res.send(await msg.drErrorMsg(user_id, channel_id))
+          console.log('★ msg sent!');
+        }
+        else{
+          console.log("★ input checked! continue");
+
+          //NOT USED
+          // console.log(`★ Clear modal view(s)`);
+          // res.send({
+          //   "response_action": "clear"
+          // });
+          
+          //find other infos
+          //1.get DC & staff data from Airtable
+          const staffAndDCData = await fn.DR_getMultipleRecordsByFormula(baseDR, "บันทึกเวลาเข้าออก", `AND( {วันที่ (Text)}="${data.misc.DRDateQuery}", IF(SEARCH("${data.misc.DRProjectQuery}",ARRAYJOIN({โครงการ}))=BLANK(),FALSE(),TRUE()))`)
+          if(staffAndDCData) {
+            
+            if(Object.keys(staffAndDCData.staff).length>0) {
+              console.log(`★ staffData from Airtable = ${JSON.stringify(staffAndDCData.staff)}`);
+              data.staff = staffAndDCData.staff;
+              console.log(`★ Updated staff data`);
+            }
+            else {
+              console.log("★ found no staff data = delete data.staff key");
+              delete data.staff;
+            }
+            
+            if(Object.keys(staffAndDCData.dc).length>0) {
+              console.log(`★ DCData from Airtable = ${JSON.stringify(staffAndDCData.dc)}`);
+              data.dc = staffAndDCData.dc;
+              console.log(`★ DC data updated`);
+            }
+            else {
+              console.log("★ found no DC data = delete data.dc key");
+              delete data.dc;
+            }
+            
+          }
+          else{
+            console.log(`★ No staff or DC data on this day, delete staff and dc keys`);
+            delete data.staff;
+            delete data.dc;
           }
           
-        break;
+          //2.get progress100% (ยังไม่ทำเพราะ base เก็บข้อมูล DR ยังไม่มา)
+          const progressData = undefined;
+          if(progressData) {
+            console.log(`★ There are progress 100% from other DR`);
+          }
+          else {
+            console.log(`★ No progress100% this week, delete progress tree`);
+            delete data.progress100;
+          }
+          
+          //delete unused data
+          delete data.misc;
+          console.log(`★ finished data = ${JSON.stringify(data)}`)
+          
+          //transform and merge into URL
+          const key = Object.keys(data)
+          console.log(`★ data keys = ${key}`);
+
+          //concat URL part from every keys except head
+          var URLparam = [];
+          for (var o in data) {
+            console.log(`★ data key = ${o}`);
+            if(o != "head") {
+              let entries = Object.entries(data[o]);
+              entries = entries.map(n => n.join("=")).join("&");
+              console.log(entries);
+              URLparam = URLparam.concat(entries);
+            }
+            else {
+              console.log(`★ data keys = head, do nothing`);
+            }
+          }
+          URLparam = URLparam.join("&")
+          console.log(`★ Finished URLparam = ${URLparam}`);
+
+          //merge URL
+          URL = `${data.head}?${URLparam}`
+          console.log(`★ URL = ${URL}`);
+          
+          //Shorten URL
+          let URLshort = await TinyURL.shorten(URL); 
+          console.log(`★ URLshort = ${URLshort}`);
+          
+          //save URL to Firestore cache
+          let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update({"misc.DRPrepopulatedURL":URLshort});
+          console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
+
+
+
+          //Push new modal view that contains PrepopulatedURL
+          console.log(`★ drProject = ${drProject}`);
+          console.log(`★ drDate = ${drDate}`);
+
+          // let pushURLviewResult = await axios.post(`https://slack.com/api/views.push`,msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
+
+          // console.log(`★ pushURLviewResult = ${JSON.stringify(pushURLviewResult.data)}`);
+          try {
+            res.send(await msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
+            console.log('★ New modal view pushed!');              
+          } catch (error) {
+            console.error(error);
+          }
+
+          /* NOT USED
+          //Send URL message
+          let responseURL = payload.response_urls[0].response_url;
+          console.log(`★ responseURL = ${responseURL}`);
+
+
+          try {
+
+            
+            let URLmessageResult = await axios.post( `${responseURL}` , msg.drPrepopMsg(drProject, drDate, URLshort) );
+
+
+            console.log(`★ URLmessageResult = ${JSON.stringify(URLmessageResult.data)}`);
+            console.log(`★ message posted`)
+          } catch (error) {
+            console.log(error);
+
+          }
+          */
+        }
       }
 
-      //******รอ assign viewName แล้วย้ายขึ้นไปด้านบนให้เหมือนกัน********
-      if(submissionValue) {
+      //User hit 'Submit' button in RB input modal
+      if(viewName == "RB_prepopInput") {
+        // res.sendStatus(204);
+        console.log(`★ RB populate URL to submitted RB modal`);
 
+        
+        //recall RB cache
+        console.log(`recall RB cache`);
+        let cache = await fs.RBPrepopURLDocRef(user_id).get().then(documentSnapshot => {
+          let fields = documentSnapshot.data();
+          return fields;
+        })
+        console.log(`★ data from DB = `);
+        console.log(JSON.stringify(cache));
+
+        //send ERROR modal if project name and refDoc is empty
+        if(!cache.misc.RBProjectQuery) {
+          console.log(`★ SEND PROJECT ERROR MODAL`);
+
+          res.send({
+            "response_action": "errors",
+            "errors": {
+              "RB_inputModal-project": "เลือกโครงการก่อนนะคะ"
+            }
+          });
+        }
+        else if(!cache.misc.RBRefDocQuery) {
+          console.log(`★ SEND REFDOC ERROR MODAL`);
+
+          res.send({
+            "response_action": "errors",
+            "errors": {
+              "RB_inputModal-PR": "เลือกเอกสารด้วยค่ะ"
+            }
+          });
+        }
+        else {
+          //get refDoc data
+          console.log(`★ get refDoc data`);
+          let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(`${metadata["MS400baseID"]}`)
+          let PRData = await baseMS400("MS400").select({"view": "Purchase Requests", "filterByFormula": `{PR No}="${cache.misc.RBRefDocQuery}"`,"fields":["ID", "Details", "Linked Budget"]}).all().then((records) => {return records.map((n) => {return n.fields})}).catch((err) => console.error(err));
+          console.log(`★ PRData`);
+          console.log(PRData);
+
+          //generate workName, description, resource if there are record(s)
+          console.log(`★ generate workName, description, resource if there are record(s)`);
+          if(PRData[0]) {
+            //workName
+            let workname = PRData.map((rec) => { return rec.Details})
+            .reduce((arrayunique, val) => { val.trim(); return arrayunique.includes(val) ? arrayunique : [...arrayunique, val]}, []);  //[workName]
+            console.log(`★ workname`);
+            console.log(workname);
+  
+            cache.refDocument.workName = workname.join(", ");
+
+            //description & resource
+            //1.query linked budgetData
+            let linkedBudgetList = PRData.reduce((arr, rec) => { return [...arr, ...rec["Linked Budget"]]}, []);   //[recordID]
+            let linkedBudgetData = [];
+            for(var val of linkedBudgetList) {
+              let data = await baseMS400("MS400").find(val)
+              .then((rec) => {
+                return {
+                  "RecordID": rec.id,
+                  "Budget_ID": rec.fields["Budget_ID"],
+                  "Area Code": rec.fields["Area Code"],
+                  "Group Element" : rec.fields["Group Element"],
+                  "NRM Code": rec.fields["NRM Code"],
+                  "Description": rec.fields["Description"],
+                  "Resource Code": rec.fields["Resource Code"],
+                  "Resource Name": rec.fields["Resource Name"],
+                  "Q'ty": rec.fields["Q'ty"],
+                  "Unit Rate": rec.fields["Unit Rate"],
+                  "Budget Amount": rec.fields["Budget Amount"],
+                  "Unit": rec.fields["Unit"]                  
+                }
+              }).catch((err) => console.error(err));
+
+              // console.log(data)
+              linkedBudgetData = [...linkedBudgetData, data]
+            }
+
+            console.log(`★ linkedBudgetData`);
+            console.log(linkedBudgetData);
+            console.log(JSON.stringify(linkedBudgetData));
+            
+            //2.group unique (sum budget of every duplicate) & restructure
+            let uniqueBudget = linkedBudgetData.reduce((unique, rec) => {
+              let ID2 = `${rec["Budget_ID"]}-${rec["Unit"]}`;
+              let keys = Object.keys(unique);
+              console.log(`ID2 = ${ID2}`);
+              console.log(`keys = ${keys}`);
+
+              if(keys.includes(ID2)) {
+                unique[ID2]["Q'ty"] = unique[ID2]["Q'ty"] + rec["Q'ty"];
+                unique[ID2]["Budget Amount"] = unique[ID2]["Budget Amount"] + rec["Budget Amount"];
+                unique[ID2]["Unit Rate"] = unique[ID2]["Budget Amount"] / unique[ID2]["Q'ty"];
+
+                return unique
+              }
+              else {
+                unique[ID2] = rec;
+                return unique
+              }
+            }, {});
+
+            console.log(`★ uniqueBudget =`);
+            console.log(uniqueBudget);
+            console.log(JSON.stringify(uniqueBudget));
+
+
+            //3.restructure & update cache for description table
+            let desFields = ["Area Code", "Group Element", "NRM Code", "Description", "Resource Code"];
+            let desRow = 0;
+            for(var k in uniqueBudget) {
+                console.log(`>>uniquebudget loop${desRow}: ${k}`)
+              for(var i in desFields) {
+                cache.description[`q54_description[${desRow}][${i}]`] = uniqueBudget[k][`${desFields[i]}`];
+              }
+              desRow = desRow + 1;
+            }
+
+            console.log(`★ updated description table =`);
+            console.log(JSON.stringify(cache.description));
+
+
+            //4.compare data to uniqueResource{}
+            let uniqueResource = Object.values(uniqueBudget).reduce((unique, n, i) => {
+              //check resource code
+              let resAndUnit = `${n["Resource Code"]}-${n["Unit"]}`;
+              // console.log(`★ resAndUnit =`);
+              // console.log(resAndUnit);
+
+              let keys = Object.keys(unique)
+              // console.log(`★ unique keys =`);
+              // console.log(keys);
+
+              //filter resource code
+              let resourceMatched = keys.filter((key) => { return key.includes(n["Resource Code"]) })
+              console.log(`★ matched resource`);
+              console.log(resourceMatched);
+              if(resourceMatched.length > 0) {
+                console.log(`★ resource matched => check for unit`);
+                  //matched resource => check for unit
+                // console.log(`★ Unit = " -${n["Unit"]} "`);
+
+
+                if(resourceMatched.join(",").includes(`-${n["Unit"]}`)) { //resource and unit matched => update sum budget
+                  console.log(`★ resource and unit matched => update sum budget`);
+                  //sumbudget
+                  unique[resAndUnit]["Q'ty"] = unique[resAndUnit]["Q'ty"] + n["Q'ty"];
+                  unique[resAndUnit]["Budget Amount"] = unique[resAndUnit]["Budget Amount"] + n["Budget Amount"];
+                  unique[resAndUnit]["Unit Rate"] = unique[resAndUnit]["Budget Amount"] / unique[resAndUnit]["Q'ty"];
+                  unique[resAndUnit]["linkedDes"] = unique[resAndUnit]["linkedDes"].concat(`, 1.${i+1}`);
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
+
+                  return unique;
+                }
+                else { //resource matched but NOT unit => add unit remarks for that resource and add new row with unit remarks
+                  console.log(`★ resource matched but NOT unit => add unit remarks for that resource and add new row with unit remarks`);
+                  //add unit remarks in filtered resource
+                  resourceMatched.map((key) => { return unique[key]["Remarks"] = `Unit = ${key.split("-")[1].trim()}` });
+                  //add new data
+                  n["Remarks"] = `Unit = ${n["Unit"]}`;
+                  n["linkedDes"] = `1.${i+1}`;
+
+                  unique[resAndUnit] = n;
+
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
+
+                  return unique
+                }
+              }
+              else {  //NO matched resource => add new data
+                console.log(`★ NO matched resource => add new data`)
+                n["linkedDes"] = `1.${i+1}`;
+                unique[resAndUnit] = n;
+
+                // console.log(`★ Updated unique`);
+                // console.log(unique);
+
+                return unique
+              }
+            }, {});
+
+            console.log(`★ uniqueResource = `);
+            console.log(uniqueResource);
+            console.log(JSON.stringify(uniqueResource));
+
+            //5.restructure & update cache for resource table
+            let resFields = ["linkedDes", "Resource Name", "Q'ty", "Unit Rate", "Budget Amount", "Remarks"];
+            desRow = 0;
+            for(var k in uniqueResource) {
+                console.log(`>>uniqueResource loop${desRow}: ${k}`)
+              for(var i in resFields) {
+                  cache.resource[`q28_resource[${desRow}][${i}]`] = uniqueResource[k][`${resFields[i]}`];
+              }
+              desRow = desRow + 1;
+            }
+
+            console.log(`★ updated resource table =`);
+            console.log(JSON.stringify(cache.resource));
+
+          }
+
+          //re-structure & form URL 
+          console.log(`★ re-structure & form URL`);
+
+          console.log(`★ cache =`);
+          console.log(JSON.stringify(cache));
+
+
+            //delete unused data
+          delete cache.misc;
+          console.log(`★ finished cache = ${JSON.stringify(cache)}`)
+          
+          //transform and merge into URL
+          const key = Object.keys(cache)
+          console.log(`★ cache keys = ${key}`);
+
+          //concat URL part from every keys except head
+          var URLparam = [];
+          for (var o in cache) {
+            console.log(`★ cache key = ${o}`);
+            if((o != "head") && (o != "AirtableData")) {
+              let entries = Object.entries(cache[o]);
+              entries = entries.map(n => n.join("=")).join("&");
+              console.log(entries);
+              URLparam = URLparam.concat(entries);
+            }
+            else {
+              console.log(`★ cache keys = head, do nothing`);
+            }
+          }
+          URLparam = URLparam.join("&")
+          console.log(`★ Finished URLparam = ${URLparam}`);
+
+          //merge URL
+          URL = `${cache.head}?${URLparam}`
+          console.log(`★ URL = ${URL}`);
+          
+          //Shorten URL
+          let URLshort = await TinyURL.shorten(URL); 
+          console.log(`★ URLshort = ${URLshort}`);
+          
+
+          //update modal
+          try {
+            res.send(await msg.rbPrepopulatedURL(cache.refDocument.refDoc.split("/")[0].trim(), cache.refDocument.refDoc, URLshort, cache.AirtableData.MS400ID));
+            console.log('★ New modal view pushed!');              
+          } catch (error) {
+            console.error(error);
+          }
+
+
+          //update cache
+          let cacheUpdate = await fs.RBPrepopURLDocRef(user_id).update(
+            {
+              "refDocument": cache.refDocument,
+              "description": cache.description,
+              "resource": cache.resource,
+              "misc.RBPrepopulatedURL" : URLshort
+            }
+          );
+          console.log(`★ cache update result = ${JSON.stringify(cacheUpdate)}`);
+          
+          /*
+          //Update modal view (send URL)
+          let newBlock = [{
+            "type": "divider"
+          },
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": `:jotform:   *RB Jotform URL :  <${URLshort}>*`
+            }
+          }];
+  
+          let newModalView = {"type": view.type, "title": view.title, "submit": view.submit, "close": view.close, "blocks": view.blocks, "private_metadata": view.private_metadata}
+  
+          //add into msg blocks
+            //delete `ข้อมูลครบแล้ว หก submit ได้เลยค่ะ` message
+          newModalView.blocks.splice(4,1)
+          newModalView.blocks = [...newModalView.blocks, ...newBlock];
+          console.log(`new modal view =`);
+          console.log(JSON.stringify(newModalView));
+  
+  
+          //update modal
+          try {
+            let args = {
+              "token": process.env.SLACK_BOT_TOKEN,
+              "view": JSON.stringify(newModalView),
+              "view_id": view.id
+            };
+  
+            let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
+            console.log('★ New modal view pushed!'); 
+            console.log(updateModalResult.data)             
+          } 
+          catch (error) {
+            console.error(error);
+          }
+          */
+
+        }
+
+      }
+      
+      else if(submissionValue) {
         //Check DR approve action in DR approve requested message
         if(submissionValue.DR_approveAction) {
           //User hit 'submit' button in reject comment modal => 1.update cache and 2.send reject message to SE
-         if(submissionValue.DR_approveAction.DR_rejectComment.value) {
-           res.sendStatus(204); //ack;
-  
-           console.log(`★ Rejected comment received!, update DB & send message to submitter`);
-  
-           //update DB
-           let DRno = metaData.DRno;
-           let project = metaData.project;
-  
-           const DRApproveResult = await fs.DRListDocRef(project, DRno).update({
-             "status": "ไม่อนุมัติ (RE)",
-             "approveData.approveDate": `${today}`,
-             "approveData.approveResult": "RE",
-             "approveData.approveComment": payload.view.state.values.DR_approveAction.DR_rejectComment.value
-           });
-           console.log(DRApproveResult);
-  
-           //send message to submitter 
-             //1. get DB Data
-           console.log(`★ Get all this DR Data from DB to form a reject message`);
-  
-           let DRApproveData = await fs.DRListDocRef(project, DRno).get().then(documentSnapshot => {
-             let fields = documentSnapshot.data();
-             return fields;
-           })
-           console.log(`★ data from DB = `);
-           console.log(JSON.stringify(DRApproveData)); 
-  
-           //2. send Message
-           let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drRejectMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)))
-  
-           console.log(`★ DM'ed to submitter, there is a result =\n `);
-           console.log(postResult.data);
-         } 
+          if(submissionValue.DR_approveAction.DR_rejectComment.value) {
+            res.sendStatus(204); //ack;
+            console.log(`★ Rejected comment received!, update DB & send message to submitter`);
+   
+            //update DB
+            let DRno = metadata.DRno;
+            let project = metadata.project;
+   
+            const DRApproveResult = await fs.DRListDocRef(project, DRno).update({
+              "status": "ไม่อนุมัติ (RE)",
+              "approveData.approveDate": `${today}`,
+              "approveData.approveResult": "RE",
+              "approveData.approveComment": payload.view.state.values.DR_approveAction.DR_rejectComment.value
+            });
+            console.log(DRApproveResult);
+   
+            //send message to submitter 
+              //1. get DB Data
+            console.log(`★ Get all this DR Data from DB to form a reject message`);
+   
+            let DRApproveData = await fs.DRListDocRef(project, DRno).get().then(documentSnapshot => {
+              let fields = documentSnapshot.data();
+              return fields;
+            })
+            console.log(`★ data from DB = `);
+            console.log(JSON.stringify(DRApproveData)); 
+   
+            //2. send Message
+            let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drRejectMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)))
+   
+            console.log(`★ DM'ed to submitter, there is a result =\n `);
+            console.log(postResult.data);
+            
+          } 
         }
 
       }
 
-      
-      
-    break;
+    }
   }
-      
-      
-      
+ 
+
 });
 
 
