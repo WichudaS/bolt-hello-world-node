@@ -67,7 +67,7 @@ function AT_createRecordsWithRecIDOutput(base, table, data, typecast, refField) 
 
           base(table).create(data , {typecast: typecast}, function(err, records) {
               if (err) {
-              console.log(`★ Couldn't create record(s), here is an error log...`)
+              // console.log(`★ Couldn't create record(s), here is an error log...`)
               console.error(err);
               reject();
               }
@@ -79,7 +79,7 @@ function AT_createRecordsWithRecIDOutput(base, table, data, typecast, refField) 
           })
       }
       else {
-          console.log(`★ Missing some inputs, can't create records, return nothing`)
+          // console.log(`★ Missing some inputs, can't create records, return nothing`)
           reject();
       }
   }).catch(err => {
@@ -94,20 +94,20 @@ function AT_listATRecordsWithRecIDOutput(base, table, data, refField) {
 
   return new Promise((resolve, reject) => {
     if (base && table && data) {
-      console.log(`start querying`);
+      // console.log(`start querying`);
       //retrive PM's ID
       base(table).select(data)
       .all()
       .then((records) => {
-        console.log(`find process successful`);
-        console.log(`number of record(s) = ${records.length}`);
+        // console.log(`find process successful`);
+        // console.log(`number of record(s) = ${records.length}`);
         
         if(records.length>0) {
           records.forEach(function(record) { output[`${record["fields"][refField]}`] = record.id })
             resolve(output);
         } 
         else {
-          console.log(`found nothing, return blank`);
+          // console.log(`found nothing, return blank`);
           resolve(output);
         } 
       });  
@@ -124,20 +124,20 @@ function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
 
   return new Promise((resolve, reject) => {
     if (base && table && data) {
-      console.log(`start querying`);
+      // console.log(`start querying`);
       //retrive PM's ID
       base(table).select(data)
       .all()
       .then((records) => {
-        console.log(`find process successful`);
-        console.log(`number of record(s) = ${records.length}`);
+        // console.log(`find process successful`);
+        // console.log(`number of record(s) = ${records.length}`);
         
         if(records.length>0) {
           records.forEach(function(record) { output[`${record.id}`] = record["fields"] })
           resolve(output);
         } 
         else {
-          console.log(`found nothing, return blank`);
+          // console.log(`found nothing, return blank`);
           resolve(output);
         } 
       });  
@@ -156,16 +156,16 @@ function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
 //====================DR functions==========================================
 //Search for Airtable record
 function DR_searchPPfrominfo(base, tableName, filterFormula) {
-  console.log("searchfrominfo");
+  // console.log("searchfrominfo");
   // console.log(`base = ${base}`);    //output =very long object 
-  console.log(`tablename = ${tableName}`);
-  console.log(`filterFormula = ${filterFormula}`);
+  // console.log(`tablename = ${tableName}`);
+  // console.log(`filterFormula = ${filterFormula}`);
 
 
 
   return new Promise((resolve, reject) => {
     if (filterFormula) {
-      console.log(`start querying`);
+      // console.log(`start querying`);
       //retrive PM's ID
       base(tableName).select({
         maxRecords: 1,
@@ -173,17 +173,17 @@ function DR_searchPPfrominfo(base, tableName, filterFormula) {
       })
       .all()
       .then((records) => {
-        console.log(`find process successful`);
-        console.log(`number of record(s) = ${records.length}`);
+        // console.log(`find process successful`);
+        // console.log(`number of record(s) = ${records.length}`);
         
         if(records.length>0) {
           records.forEach(record => {
-            console.log(`recordID = ${record.id} , record firlds = ${JSON.stringify(record.fields)}`);
+            // console.log(`recordID = ${record.id} , record firlds = ${JSON.stringify(record.fields)}`);
             resolve(record.fields)
           });
         } 
         else {
-          console.log(`found nothing, return blank`);
+          // console.log(`found nothing, return blank`);
           resolve();
         } 
       });  
@@ -195,16 +195,16 @@ function DR_searchPPfrominfo(base, tableName, filterFormula) {
 
 
 function DR_getDataFromID(base, tableName, recordID) {
-  console.log(`Find Info`);
-  console.log(`tableName = ${tableName}`);
-  console.log(`recordID = ${recordID}`);
+  // console.log(`Find Info`);
+  // console.log(`tableName = ${tableName}`);
+  // console.log(`recordID = ${recordID}`);
 
   return new Promise((resolve, reject) => {
     base(tableName).find(recordID, function(err, record) {
       if (err) { console.error(err); return; }
-      console.log(`Retrieved record ${record.id}`);
-      console.log(`return record fields `);
-      console.log(record.fields);
+      // console.log(`Retrieved record ${record.id}`);
+      // console.log(`return record fields `);
+      // console.log(record.fields);
       resolve(record.fields);
     });
   }).catch(err => {
@@ -215,10 +215,10 @@ function DR_getDataFromID(base, tableName, recordID) {
 };
 
 function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
-  console.log("DR_getMultipleRecordsByFormula => list all records that match the criteria");
+  // console.log("DR_getMultipleRecordsByFormula => list all records that match the criteria");
   // console.log(`base = ${base}`);    //output =very long object 
-  console.log(`tablename = ${tableName}`);
-  console.log(`filterFormula = ${filterFormula}`);
+  // console.log(`tablename = ${tableName}`);
+  // console.log(`filterFormula = ${filterFormula}`);
 
   let obj = {
     "staff": {
@@ -229,7 +229,7 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
 
   return new Promise((resolve, reject) => {
     if (filterFormula) {
-      console.log(`start querying`);
+      // console.log(`start querying`);
       //retrive records
       base(tableName).select({
         maxRecords: 100,
@@ -238,8 +238,8 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
       })
       .all()
       .then((records) => {
-        console.log(`find process successful`);
-        console.log(`number of record(s) = ${records.length}`);
+        // console.log(`find process successful`);
+        // console.log(`number of record(s) = ${records.length}`);
         
         if(records.length>0) {
           var i=0;
@@ -247,16 +247,16 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
           let staffName = []
 
           for(var a=0 ; a<records.length ; a++) {
-            console.log(`recordID = ${records[a].id} , record fields = ${JSON.stringify(records[a].fields)}`);
+            // console.log(`recordID = ${records[a].id} , record fields = ${JSON.stringify(records[a].fields)}`);
             var { fields } = records[a];
             //assign into staff object
             if(fields["ชื่อพนักงาน"]) {
               //check for duplicate names
               if(staffName.includes(fields["ชื่อพนักงาน (Text)"])) {
-                console.log(`Duplicated staff Name, do nothing`)
+                // console.log(`Duplicated staff Name, do nothing`)
               }
               else {
-                console.log(`new staff name, push into staffName array, and add into staff object`)
+                // console.log(`new staff name, push into staffName array, and add into staff object`)
                 staffName = [...staffName, fields["ชื่อพนักงาน (Text)"]]
                 //add staff into staff object output
                 for(var j=0 ; j<2 ; j++) {
@@ -322,11 +322,11 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
             }
 
           }
-          console.log(obj);
+          // console.log(obj);
           resolve(obj);
         } 
         else {
-          console.log(`found nothing, return blank`);
+          // console.log(`found nothing, return blank`);
           resolve();
         } 
       });  
@@ -337,10 +337,10 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
 };
 
 function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
-  console.log("getDCRecordsByFormula => list all records that match the criteria");
+  // console.log("getDCRecordsByFormula => list all records that match the criteria");
   // console.log(`base = ${base}`);    //output =very long object 
-  console.log(`tablename = ${tableName}`);
-  console.log(`filterFormula = ${filterFormula}`);
+  // console.log(`tablename = ${tableName}`);
+  // console.log(`filterFormula = ${filterFormula}`);
 
   let obj = {
     "q39_DCTable[0][0]": ""
@@ -348,7 +348,7 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
 
   return new Promise((resolve, reject) => {
     if (filterFormula) {
-      console.log(`start querying`);
+      // console.log(`start querying`);
       //retrive records
       base(tableName).select({
         maxRecords: 50,
@@ -357,12 +357,12 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
       })
       .all()
       .then((records) => {
-        console.log(`find process successful`);
-        console.log(`number of record(s) = ${records.length}`);
+        // console.log(`find process successful`);
+        // console.log(`number of record(s) = ${records.length}`);
         
         if(records.length>0) {
           for(var i=0 ; i<records.length ; i++) {
-            console.log(`recordID = ${records[i].id} , record fields = ${JSON.stringify(records[i].fields)}`);
+            // console.log(`recordID = ${records[i].id} , record fields = ${JSON.stringify(records[i].fields)}`);
             var { fields } = records[i];
             for(var j=0 ; j<4 ; j++) {
               let key = `q39_DCTable[${i}][${j}]`
@@ -401,11 +401,11 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
                 }
             }
           }
-          console.log(obj);
+          // console.log(obj);
           resolve(obj);
         } 
         else {
-          console.log(`found nothing, return blank`);
+          // console.log(`found nothing, return blank`);
           resolve();
         } 
       });  
