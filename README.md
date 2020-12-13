@@ -6,7 +6,7 @@ _Published October, 2019_
 
 ---
 
-There are two code samples to achieve the same app: 
+There are two code samples to achieve the same app:
 - The sample code with Node w/ Express: this repo
 - The sample code with Slack **Bolt**: [https://glitch.com/edit/#!/apphome-bolt-demo-note](https://glitch.com/edit/#!/apphome-bolt-demo-note)
 
@@ -17,12 +17,12 @@ There are two code samples to achieve the same app:
 
 ## Slack App Config
 
-Go to https://api.slack.com/apps to create a new app. 
+Go to https://api.slack.com/apps to create a new app.
 
 - App Home
   - Enable Home Tab
   - Enable Message (if your app takes DM from users)
-  
+
 - Enable Bot user
 
 - Add appropriate bot scope(s)
@@ -33,13 +33,12 @@ Go to https://api.slack.com/apps to create a new app.
   - Subscribe to workspace events
   - Add `app_home_opened`
   - Save
-  
+
 - Go to **Interactivity & Actions** and enable
   - Reuest URL should be: `https://your-project.glitch.me/slack/actions`
   - Save
-  
-  
+
+
 On Slack client:
   - Click the app name to go to the home tab
   - Click the "Add a stickie" button and see what happens!
-  
