@@ -157,7 +157,7 @@ function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
 //Search for Airtable record
 function DR_searchPPfrominfo(base, tableName, filterFormula) {
   // console.log("searchfrominfo");
-  console.log(`base = ${base}`);    //output =very long object 
+  // console.log(`base = ${base}`);    //output =very long object 
   // console.log(`tablename = ${tableName}`);
   // console.log(`filterFormula = ${filterFormula}`);
 
@@ -216,7 +216,7 @@ function DR_getDataFromID(base, tableName, recordID) {
 
 function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
   // console.log("DR_getMultipleRecordsByFormula => list all records that match the criteria");
-  console.log(`base = ${base}`);    //output =very long object 
+  // console.log(`base = ${base}`);    //output =very long object 
   // console.log(`tablename = ${tableName}`);
   // console.log(`filterFormula = ${filterFormula}`);
 
@@ -338,7 +338,7 @@ function DR_getMultipleRecordsByFormula(base, tableName, filterFormula) {
 
 function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
   // console.log("getDCRecordsByFormula => list all records that match the criteria");
-  console.log(`base = ${base}`);    //output =very long object 
+  // console.log(`base = ${base}`);    //output =very long object 
   // console.log(`tablename = ${tableName}`);
   // console.log(`filterFormula = ${filterFormula}`);
 

@@ -12,10 +12,10 @@ const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXt
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
 
 var today = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
-console.log(today);
+// console.log(today);
 
 var initialDatepicker = dateFormat(today, "yyyy-mm-dd");
-console.log(`initialDatepicker = ${initialDatepicker}`);
+// console.log(`initialDatepicker = ${initialDatepicker}`);
 
 //=============================DECLARE obj 'MOM message'=============================
 const momMsg = () => {
@@ -1342,7 +1342,7 @@ const drRejectCommentMsg = (triggerID, SLACK_BOT_TOKEN, metadata) => {
     "view": JSON.stringify(msg)
   };
   
-  console.log(`args = ${JSON.stringify(args)}`);
+  // console.log(`args = ${JSON.stringify(args)}`);
 
   return args;
 };
@@ -1483,8 +1483,8 @@ const rbMsg = async (user_id, triggerID) => {
   //1. get all projects from Airtable
   const projects = await baseDR("รายละเอียดโครงการ").select({maxRecords: 100, view: "Jotform-Project list", fields: ["Name", "ชื่อย่อโครงการ", "RecordID"]}).all();
   //print test
-  console.log(`projects from Airtable`)
-  projects.forEach((r) => console.log(JSON.stringify(r.fields)));
+  // console.log(`projects from Airtable`)
+  // projects.forEach((r) => console.log(JSON.stringify(r.fields)));
 
   let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มาทำ Requested Budget กันนะคะ :heart:`
   let metadata = JSON.stringify({"viewName": "RB_prepopInput", "MS400baseID": ""});
@@ -1555,7 +1555,7 @@ const rbMsg = async (user_id, triggerID) => {
     "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
   }});
   // console.log(`layouted projects = `);
-  // data.forEach(n => console.log(JSON.stringify(n)));
+  data.forEach(n => console.log(JSON.stringify(n)));
   
 
   //add into msg blocks
@@ -1755,7 +1755,7 @@ function delMsg(response_url) {
     if (response_url) {
       //const result = axios.post(response_url, msg);
       axios.post(response_url, msg);
-      console.log(result);
+      // console.log(result);
         resolve();
       }
     else {

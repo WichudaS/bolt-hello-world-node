@@ -102,14 +102,14 @@ app.post('/jotform/hooks' , async function(req, res) {
 
   
   const body = JSON.stringify(req.body);
-  console.log(`★ req.body is = \n ${body}`);
+  // console.log(`★ req.body is = \n ${body}`);
   
   const raw = req.body.rawRequest;
   // console.log(`★ raw is = \n ${raw}`);
 
   // JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
   const rawreq = JSON.stringify(req.body.rawRequest);
-  console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
+  // console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
 
   const formID = req.body.formID;
   // console.log(`★ formID is = \n ${formID}`);
@@ -330,9 +330,9 @@ app.post('/jotform/hooks' , async function(req, res) {
             if(i[0]) {
 
               let work = Object.keys(workRec).filter((n) => { return n.search(i[1].trim()) != -1 });   //return ARRAY
-              console.log(`★ DCwork = ${work}`);
+              // console.log(`★ DCwork = ${work}`);
               let DCposition = Object.keys(DCmanpower).filter((m) => { return m.search(i[1].trim()) != -1 });   //return ARRAY
-              console.log(`★ DCposition = ${DCposition}`);
+              // console.log(`★ DCposition = ${DCposition}`);
 
               DRdataToAirtable["รายละเอียดคนงาน DC"] = DRdataToAirtable["รายละเอียดคนงาน DC"].concat(
                 {
@@ -366,11 +366,11 @@ app.post('/jotform/hooks' , async function(req, res) {
                 "filterByFormula" : `AND( {ชื่อชุดช่าง}="${i[1]}",{ชื่อย่อโครงการ (from โครงการ)}="${parsed["q98_input98"]}")`
               };
               let SUBmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseDR, "ชุดช่าง", queryData, "DES. ใน Manpower");  //return OBJECT
-              console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
+              // console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
 
 
               let work = Object.keys(workRec).filter((n) => { return n.search(i[0].trim()) != -1 });   //return ARRAY
-              console.log(`★ SUBwork = ${work}`);
+              // console.log(`★ SUBwork = ${work}`);
 
               let errorLog = [];
               if(work.length==0 || Object.keys(SUBmanpower).length!=1) {
@@ -445,7 +445,7 @@ app.post('/jotform/hooks' , async function(req, res) {
 
         //Query manpower equipment list (DO NOT USE THIS, ADD NEW ROW WHEN THERE IS NEW EQUIPMENT)
         // var EQmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "EQUIPMENT", {"fields":["Description"]} , "Description")
-        console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
+        // console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
         //add equipment data
         if(parsed["q53_input53"]) {
           for( var i of parsed["q53_input53"]) {
@@ -580,7 +580,7 @@ app.post('/integromat/hooks', async function(req,res) {
           // console.log(`★ New DR Approved from PM, Save Data to Airtable, Update DB, send publish messages`);
             //Route 1. save to Airtable  ★ waiting for approve
             //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
-            console.log(`★ save to Airtable`);
+            // console.log(`★ save to Airtable`);
             //--------------------------------------------------------------------------------------
             //Route 2. update DB
             // console.log(`★ update DR DB`);
@@ -637,7 +637,7 @@ app.post('/integromat/hooks', async function(req,res) {
 
           //Route 1. save to Airtable  ★ waiting for approve
           //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
-          console.log(`★ save to Airtable`);
+          // console.log(`★ save to Airtable`);
           //--------------------------------------------------------------------------------------
           //Route 2. update DB
           // console.log(`★ update DR DB`);
@@ -698,15 +698,15 @@ app.post('/slack/events' , async(req, res) => {
       // console.log("----------req.body.type----------");   
       // console.log(req.body.type);    
       // console.log("----------req.body----------");   
-      console.log(req.body);  
+      // console.log(req.body);  
       // console.log("----------req.body.string----------");   
       // console.log(JSON.stringify(req.body)); 
       // console.log("----------req.body.context----------");   
       // console.log(req.body.context);       
       // console.log("----------req.body.payload----------");   
       // console.log(req.body.payload);  
-      console.log("----------req.body.event----------");   
-      console.log(req.body.event);    
+      // console.log("----------req.body.event----------");   
+      // console.log(req.body.event);    
       // console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
   //RESPONSE TO EVENT CASES===============,
   switch (req.body.type) {
@@ -827,7 +827,7 @@ app.post('/slack/events' , async(req, res) => {
                 des = des.filter(n => n!= null && n!= undefined && n!="");
               }
             }
-            // catch (err) {console.log(err);
+            catch (err) {console.log(err);
             };
             // console.log(`★ project = ${project}`);
             // console.log(`★ workType = ${workType}`);
@@ -915,7 +915,7 @@ app.post('/slack/events' , async(req, res) => {
         // console.log("=====Retrieve record=====");
         // console.log(`★ tableName = ${tableName}`);
         // console.log(`★ recordPK = ${recordPK}`);
-        console.log(`base = ${base}`);
+        // console.log(`base = ${base}`);
         // console.log(`★ filerformula = {ชื่อและวันที่}="${recordPK}"` );
 
         return new Promise((resolve, reject) => {
@@ -932,12 +932,12 @@ app.post('/slack/events' , async(req, res) => {
             }).all()
             .then((records) => {
               // console.log(`★ case successful`);
-              console.log(records);
+              // console.log(records);
               if(records.length>0) {
                 records.forEach(item => {
                   // console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
                   // console.log(`★ The recordID is = ${item.id}`);
-                  console.log(item);
+                  // console.log(item);
 
                   resolve(item.id);
                 });
@@ -979,8 +979,8 @@ app.post('/slack/events' , async(req, res) => {
                 allRecord = allRecord.concat(record);
                 outputText = `★ record ID ${record.id} from ${tableName} is CREATED!`;
               });
-              console.log("★ allRecord = ");
-              console.log(allRecord);
+              // console.log("★ allRecord = ");
+              // console.log(allRecord);
               resolve(outputText);
             });
           } else {
@@ -1108,7 +1108,7 @@ app.post('/slack/commands', async(req, res) => {
     msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
     .then(result => {
       // console.log(result.data);
-      // return console.log(`★ DR modal posted!`)
+      return console.log(`★ DR modal posted!`)
     })
     .catch(err => {
       console.error(err);
@@ -1236,11 +1236,11 @@ app.post('/slack/commands', async(req, res) => {
 
 //=============================ACTION RESPONSE=============================
 app.post('/slack/actions', async(req, res) => {
-  console.log(JSON.parse(req.body.payload));
+  // console.log(JSON.parse(req.body.payload));
   //LOG ACTION REQUEST 
       // console.log("---------------ACTION REQUEST STARTS HERE---------------");
-      console.log("----------req.body----------");  
-      console.log(req.body); 
+      // console.log("----------req.body----------");  
+      // console.log(req.body); 
       // console.log("----------req.body(string)----------");  
       // console.log(JSON.stringify(req.body)); 
       // console.log("----------req.body.actions----------");   
@@ -1264,7 +1264,7 @@ app.post('/slack/actions', async(req, res) => {
 
       const submissionValue = view? view.state.values : "";
       
-      console.log({ token, user, actions });
+      // console.log({ token, user, actions });
       // console.log(`★ viewName = ${viewName}`);
       // console.log(`★ trigger_id = ${trigger_id}`);
       // console.log("★ response_url = " + response_url);
@@ -1467,15 +1467,15 @@ app.post('/slack/actions', async(req, res) => {
             //get datas
             //Project data
             let projectData = await baseDR("รายละเอียดโครงการ").find(ID).then(record => {return record.fields});
-            console.log(`★ projectData`);          
-            console.log(projectData);
+            // console.log(`★ projectData`);          
+            // console.log(projectData);
             if(projectData) {
               data.AirtableData.MS400ID = projectData["MS400 baseID"];
             }
             //PMData
             let PMData = await baseDR("รายชื่อพนักงาน").find(projectData["ชื่อ PM (จากรายชื่อพนักงาน)"][0]).then(record => {return record.fields});
-            console.log(`★ PMData`);
-            console.log(PMData);
+            // console.log(`★ PMData`);
+            // console.log(PMData);
             if(PMData) {
               data.PM["PMName[first]"] = PMData["ชื่อ-สกุล"].split(" ")[0].trim();
               data.PM["PMName[last]"] = PMData["ชื่อ-สกุล"].split(" ")[1].trim();
@@ -1491,8 +1491,8 @@ app.post('/slack/actions', async(req, res) => {
             //sumRB
             let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(`${projectData["MS400 baseID"]}`)
             let RBData = await baseMS400("MS400").select({"view": "Requested Budgets", "fields":["ID", "Original BG Amount", "Ordered BG Amount"]}).all().then((records) => {return records.map((n) => {return n.fields})})
-            console.log(`★ RBData`);
-            console.log(RBData);
+            // console.log(`★ RBData`);
+            // console.log(RBData);
             if(RBData) {
               data.sumBudget.accOriginalBudget = RBData.reduce((sum, rec)=> {return {"Original BG Amount": sum["Original BG Amount"] + rec["Original BG Amount"]} })["Original BG Amount"]
               data.sumBudget.accOrderedBudget = RBData.reduce((sum, rec)=> {return {"Ordered BG Amount": sum["Ordered BG Amount"] + rec["Ordered BG Amount"]} })["Ordered BG Amount"]
@@ -1530,8 +1530,8 @@ app.post('/slack/actions', async(req, res) => {
                 "value": n
               }
             });
-            console.log(`layouted projects = `);
-            PRoptions.forEach(n => console.log(JSON.stringify(n)));
+            // console.log(`layouted projects = `);
+            // PRoptions.forEach(n => console.log(JSON.stringify(n)));
 
             let PRListSection = {
                 "type": "input",
@@ -1672,7 +1672,7 @@ app.post('/slack/actions', async(req, res) => {
         msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
         .then(result => {
           // console.log(result.data)
-          // return console.log("★ Modal posted");
+          return console.log("★ Modal posted");
         
         })
         .catch(err => {
@@ -1729,7 +1729,7 @@ app.post('/slack/actions', async(req, res) => {
         await msg.rbMsg(user_id, trigger_id)
         .then(result => {
           // console.log(result.data);
-          // return console.log(`★ RB modal posted!`)
+          return console.log(`★ RB modal posted!`)
         })
         .catch(err => {
           console.error(err);
@@ -1838,7 +1838,7 @@ app.post('/slack/actions', async(req, res) => {
           // console.log("★ input checked! continue");
 
           //NOT USED
-          console.log(`★ Clear modal view(s)`);
+          // console.log(`★ Clear modal view(s)`);
           // res.send({
           //   "response_action": "clear"
           // });
@@ -1930,7 +1930,7 @@ app.post('/slack/actions', async(req, res) => {
 
           // let pushURLviewResult = await axios.post(`https://slack.com/api/views.push`,msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
 
-          console.log(`★ pushURLviewResult = ${JSON.stringify(pushURLviewResult.data)}`);
+          // console.log(`★ pushURLviewResult = ${JSON.stringify(pushURLviewResult.data)}`);
           try {
             res.send(await msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
             // console.log('★ New modal view pushed!');              
@@ -2038,7 +2038,7 @@ app.post('/slack/actions', async(req, res) => {
                 }
               }).catch((err) => console.error(err));
 
-              console.log(data)
+              // console.log(data)
               linkedBudgetData = [...linkedBudgetData, data]
             }
 
@@ -2090,12 +2090,12 @@ app.post('/slack/actions', async(req, res) => {
             let uniqueResource = Object.values(uniqueBudget).reduce((unique, n, i) => {
               //check resource code
               let resAndUnit = `${n["Resource Code"]}-${n["Unit"]}`;
-              console.log(`★ resAndUnit =`);
-              console.log(resAndUnit);
+              // console.log(`★ resAndUnit =`);
+              // console.log(resAndUnit);
 
               let keys = Object.keys(unique)
-              console.log(`★ unique keys =`);
-              console.log(keys);
+              // console.log(`★ unique keys =`);
+              // console.log(keys);
 
               //filter resource code
               let resourceMatched = keys.filter((key) => { return key.includes(n["Resource Code"]) })
@@ -2104,7 +2104,7 @@ app.post('/slack/actions', async(req, res) => {
               if(resourceMatched.length > 0) {
                 // console.log(`★ resource matched => check for unit`);
                   //matched resource => check for unit
-                console.log(`★ Unit = " -${n["Unit"]} "`);
+                // console.log(`★ Unit = " -${n["Unit"]} "`);
 
 
                 if(resourceMatched.join(",").includes(`-${n["Unit"]}`)) { //resource and unit matched => update sum budget
@@ -2114,8 +2114,8 @@ app.post('/slack/actions', async(req, res) => {
                   unique[resAndUnit]["Budget Amount"] = unique[resAndUnit]["Budget Amount"] + n["Budget Amount"];
                   unique[resAndUnit]["Unit Rate"] = unique[resAndUnit]["Budget Amount"] / unique[resAndUnit]["Q'ty"];
                   unique[resAndUnit]["linkedDes"] = unique[resAndUnit]["linkedDes"].concat(`, 1.${i+1}`);
-                  console.log(`★ Updated unique`);
-                  console.log(unique);
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
 
                   return unique;
                 }
@@ -2129,8 +2129,8 @@ app.post('/slack/actions', async(req, res) => {
 
                   unique[resAndUnit] = n;
 
-                  console.log(`★ Updated unique`);
-                  console.log(unique);
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
 
                   return unique
                 }
@@ -2140,8 +2140,8 @@ app.post('/slack/actions', async(req, res) => {
                 n["linkedDes"] = `1.${i+1}`;
                 unique[resAndUnit] = n;
 
-                console.log(`★ Updated unique`);
-                console.log(unique);
+                // console.log(`★ Updated unique`);
+                // console.log(unique);
 
                 return unique
               }
