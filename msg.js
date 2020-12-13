@@ -2,13 +2,11 @@
 const axios = require('axios'); 
 const dateFormat = require("dateformat");
 const qs = require('qs');
-
+const Airtable = require("airtable");
 const fs = require('./firestore');
 
-
 const apiUrl = 'https://slack.com/api';
-
-
+const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
 
 
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
@@ -1478,80 +1476,269 @@ const drRejectMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
 };
 
 
+//=============================DECLARE obj 'RB message'===============================
+//-----Pre-populate URL modal------
+const rbMsg = async (user_id, triggerID) => {
+  
+  //1. get all projects from Airtable
+  const projects = await baseDR("รายละเอียดโครงการ").select({maxRecords: 100, view: "Jotform-Project list", fields: ["Name", "ชื่อย่อโครงการ", "RecordID"]}).all();
+  //print test
+  // console.log(`projects from Airtable`)
+  // projects.forEach((r) => console.log(JSON.stringify(r.fields)));
+
+  let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มาทำ Requested Budget กันนะคะ :heart:`
+  let metadata = JSON.stringify({"viewName": "RB_prepopInput", "MS400baseID": ""});
+
+  const msg = {
+    "type": "modal",
+    "title": {
+      "type": "plain_text",
+      "text": "Requested Budget",
+      "emoji": true
+    },
+    "submit": {
+      "type": "plain_text",
+      "text": "Submit",
+      "emoji": true
+    },
+    "close": {
+      "type": "plain_text",
+      "text": "Cancel",
+      "emoji": true
+    },
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": welcomeText
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "input",
+        "block_id": "RB_inputModal-project",
+        "dispatch_action": true,
+        "element": {
+          "type": "static_select",
+          "placeholder": {
+            "type": "plain_text",
+            "text": "เลือกโครงการ",
+            "emoji": true
+          },
+          "options": [
+          ]
+        },
+        "label": {
+          "type": "plain_text",
+          "text": ":building_construction:  เลือกโครงการ",
+          "emoji": true
+        }
+      }
+  
+    ],
+    "private_metadata":metadata
+  };
+
+
+  //layout projectData
+  let data = projects.map((n) => {
+
+    return {
+    "text": {
+      "type": "plain_text",
+      "text": `${n.fields.Name}`,
+      "emoji": true
+    },
+    "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
+  }});
+  console.log(`layouted projects = `);
+  data.forEach(n => console.log(JSON.stringify(n)));
+  
+
+  //add into msg blocks
+  msg.blocks[2].element.options = data;
+  console.log(`new msg =`);
+  console.log(JSON.stringify(msg));
+
+  const args = {
+    "token": process.env.SLACK_BOT_TOKEN,
+    "trigger_id": triggerID,
+    "view": JSON.stringify(msg)
+  };
+
+  // open modal
+  try {
+    const result = axios.post(`${apiUrl}/views.open`, qs.stringify(args));
+    return result;
+  } catch (error) {
+    console.error(error);
+  }
+
+};
+//-----rbMsg template for update-------
+const rbPrepopulatedURL = (project, refDoc, URL, MS400baseID) => {
+  let metadata = JSON.stringify({"viewName": "RB_prepopInput", "MS400baseID": MS400baseID});
+
+  let msg = {
+    "type": "modal",
+    "title": {
+      "type": "plain_text",
+      "text": "Requested Budget",
+      "emoji": true
+    },
+    "close": {
+      "type": "plain_text",
+      "text": "Close",
+      "emoji": true
+    },
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "ลิ้งค์สำหรับกรอก *Requested Budget*"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `:building_construction:            โครงการ:  ${project}\n\n :calendar:   เอกสารอ้างอิง:  ${refDoc}\n\n :jotform:                  URL:  <${URL}>`
+        }
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "plain_text",
+            "text": " ",
+            "emoji": true
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "plain_text",
+          "text": "ขอบคุณค่ะ",
+          "emoji": true
+        }
+      }
+    ],
+    "private_metadata":metadata,
+  }; 
+
+  let arg = {
+    "response_action": "update",
+    "view": msg
+  }
+
+  return arg;
+};
+
+
+
+
+
+
+
+
 //=============================DECLARE obj 'help message'=============================
 const helpMsg = () => {
   const msg = {
-			"response_type": "ephemeral",
-			"blocks": [
-				{
-					"type": "section",
-					"text": {
-						"type": "mrkdwn",
-						"text": "ฮั่นแน่! ยังจำคำสั่งไม่ได้ใช่ไหมคะ? ลองพิมพ์ตามคำสั่งด้านล่างหรือกดปุ่มก็ได้ค่ะ:relaxed:"
-					},
-					"accessory": {
-						"type": "button",
-						"action_id": "deletemessage",
-						"text": {
-							"type": "plain_text",
-							"text": "ปิด :x:",
-							"emoji": true
-						},
-						"value": "deletemessage"
-					}
-				},
-				{
-					"type": "divider"
-				},
-				{
-					"type": "section",
-					"text": {
-						"type": "mrkdwn",
-						"text": ":clipboard: *ทำบันทึกการประชุม (MOM)* \n พิมพ์  `/kdc mom`"
-					},
-					"accessory": {
-						"type": "button",
-						"url": "https://form.jotform.com/201602931022439",
-						"action_id": "open_momMsg",
-						"text": {
-							"type": "plain_text",
-							"emoji": true,
-							"text": "Minute of Meeting"
-						},
-						"value": "open_momMsg"
-					}
-				},
-				{
-					"type": "section",
-					"text": {
-						"type": "mrkdwn",
-						"text": ":clipboard: *ทำ Daily Report (DR)* \n พิมพ์  `/kdc dr`"
-					},
-					"accessory": {
-						"type": "button",
-						"action_id": "open_drMsg",
-						"text": {
-							"type": "plain_text",
-							"emoji": true,
-							"text": "Daily Report"
-						},
-						"value": "open_drMsg"
-					}
-				},
-				{
-					"type": "divider"
-				},
-				{
-					"type": "context",
-					"elements": [
-						{
-							"type": "mrkdwn",
-							"text": "TIPS: การฝึกจำคีย์ลัดจะทำให้การเรียกคำสั่งเร็วขึ้นนะคะ มาฝึกจำกันนะคะ :hugging_face:"
-						}
-					]
-				}
-			]
-    };
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "ฮั่นแน่! ยังจำคำสั่งไม่ได้ใช่ไหมคะ? ลองพิมพ์ตามคำสั่งด้านล่างหรือกดปุ่มก็ได้ค่ะ:relaxed:"
+        },
+        "accessory": {
+          "type": "button",
+          "action_id": "deletemessage",
+          "text": {
+            "type": "plain_text",
+            "text": "ปิด :x:",
+            "emoji": true
+          },
+          "value": "deletemessage"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": ":clipboard: *ทำบันทึกการประชุม (MOM)* \n        พิมพ์  `/kdc mom`"
+        },
+        "accessory": {
+          "type": "button",
+          "url": "https://form.jotform.com/201602931022439",
+          "action_id": "open_momMsg",
+          "text": {
+            "type": "plain_text",
+            "emoji": true,
+            "text": "Minute of Meeting"
+          },
+          "value": "open_momMsg"
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": ":clipboard: *ทำ Daily Report (DR)* \n        พิมพ์  `/kdc dr`"
+        },
+        "accessory": {
+          "type": "button",
+          "action_id": "open_drMsg",
+          "text": {
+            "type": "plain_text",
+            "emoji": true,
+            "text": "Daily Report"
+          },
+          "value": "open_drMsg"
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": ":clipboard: *ทำ Requested Budget (RB)* \n        พิมพ์  `/kdc rb`"
+        },
+        "accessory": {
+          "type": "button",
+          "action_id": "open_rbMsg",
+          "text": {
+            "type": "plain_text",
+            "emoji": true,
+            "text": "Requested Budget"
+          },
+          "value": "open_rbMsg"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "mrkdwn",
+            "text": "TIPS: การฝึกจำคีย์ลัดจะทำให้การเรียกคำสั่งเร็วขึ้นนะคะ มาฝึกจำกันนะคะ :hugging_face:"
+          }
+        ]
+      }
+    ]
+  }
   return msg;
 };
 
@@ -1625,5 +1812,8 @@ function sendEphemeralMsg(user_id, channel_id, msg, SLACK_BOT_TOKEN) {
 
 
 //=============================EXPORT FUNCTIONS=============================
-module.exports = { helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg, drMsg, drErrorMsg, drPrepopulatedURL, drPrepopMsg, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg};
+module.exports = { 
+  helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg, 
+  drMsg, drErrorMsg, drPrepopulatedURL, drPrepopMsg, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg, 
+  rbMsg, rbPrepopulatedURL};
 
