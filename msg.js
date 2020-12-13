@@ -12,10 +12,10 @@ const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXt
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
 
 var today = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
-// console.log(today);
+console.log(today);
 
 var initialDatepicker = dateFormat(today, "yyyy-mm-dd");
-// console.log(`initialDatepicker = ${initialDatepicker}`);
+console.log(`initialDatepicker = ${initialDatepicker}`);
 
 //=============================DECLARE obj 'MOM message'=============================
 const momMsg = () => {
@@ -257,12 +257,12 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
     fs.db.doc('slack-external-menus/project list').get()
     .then(documentSnapshot => {
       let data = documentSnapshot.data();
-      console.log(`Retrived data = ${JSON.stringify(data)}`);
-      console.log(`data = `);
-      console.log(data);
+      // console.log(`Retrived data = ${JSON.stringify(data)}`);
+      // console.log(`data = `);
+      // console.log(data);
       msg.blocks[3].elements[0].options = data.options;
-      console.log(`new msg =`);
-      console.log(JSON.stringify(msg));
+      // console.log(`new msg =`);
+      // console.log(JSON.stringify(msg));
       return msg;
     })
     .then( msg => {
@@ -387,12 +387,12 @@ const drErrorMsg = (user_id, channel_id) => {
     fs.db.doc('slack-external-menus/project list').get()
     .then(documentSnapshot => {
       let data = documentSnapshot.data();
-      console.log(`Retrived data = ${JSON.stringify(data)}`);
-      console.log(`data = `);
-      console.log(data);
+      // console.log(`Retrived data = ${JSON.stringify(data)}`);
+      // console.log(`data = `);
+      // console.log(data);
       msg.blocks[3].elements[0].options = data.options;
-      console.log(`new msg =`);
-      console.log(JSON.stringify(msg));
+      // console.log(`new msg =`);
+      // console.log(JSON.stringify(msg));
       return msg;
     })
     .then( msg => {
@@ -569,7 +569,7 @@ const drApproveMsg = (DBobj, SLACK_BOT_TOKEN) => {
   // โครงสร้าง Obj ของ DRList
   /*
   let DBobj = {
-    "formID": "203155274544453",
+    "formID": "201670438940455",
     "submissionID": formTitle,
     "number": DRno,
     "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
@@ -594,7 +594,7 @@ const drApproveMsg = (DBobj, SLACK_BOT_TOKEN) => {
   var {name, number, project, docType, submitData, pdfLink, approveData, submissionID } = DBobj;
 
   let approveURL = `https://www.jotform.com/edit/${submissionID}`
-  console.log(`edit submissionURL = ${approveURL}`);
+  // console.log(`edit submissionURL = ${approveURL}`);
 
   let msg = {
     "blocks": [
@@ -689,7 +689,7 @@ const drPublishedMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
   /*
   let DBobj = {
     "name": "PLM-DR-20200805",
-    "formID": "203155274544453",
+    "formID": "201670438940455",
     "approveData": {
         "approverSlackID": "U010E15TBU0",
         "approveDate": "2020-08-13",
@@ -920,7 +920,7 @@ const drCommentMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
   /*
   let DBobj = {
     "name": "PLM-DR-20200805",
-    "formID": "203155274544453",
+    "formID": "201670438940455",
     "approveData": {
         "approverSlackID": "U010E15TBU0",
         "approveDate": "2020-08-13",
@@ -1067,7 +1067,7 @@ const drFileUpdateMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
   /*
   let DBobj = {
     "name": "PLM-DR-20200805",
-    "formID": "203155274544453",
+    "formID": "201670438940455",
     "approveData": {
         "approverSlackID": "U010E15TBU0",
         "approveDate": "2020-08-13",
@@ -1342,7 +1342,7 @@ const drRejectCommentMsg = (triggerID, SLACK_BOT_TOKEN, metadata) => {
     "view": JSON.stringify(msg)
   };
   
-  // console.log(`args = ${JSON.stringify(args)}`);
+  console.log(`args = ${JSON.stringify(args)}`);
 
   return args;
 };
@@ -1354,7 +1354,7 @@ const drRejectMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
   /*
   let DBobj = {
     "name": "PLM-DR-20200805",
-    "formID": "203155274544453",
+    "formID": "201670438940455",
     "approveData": {
         "approverSlackID": "U010E15TBU0",
         "approveDate": "2020-08-13",
@@ -1483,8 +1483,8 @@ const rbMsg = async (user_id, triggerID) => {
   //1. get all projects from Airtable
   const projects = await baseDR("รายละเอียดโครงการ").select({maxRecords: 100, view: "Jotform-Project list", fields: ["Name", "ชื่อย่อโครงการ", "RecordID"]}).all();
   //print test
-  // console.log(`projects from Airtable`)
-  // projects.forEach((r) => console.log(JSON.stringify(r.fields)));
+  console.log(`projects from Airtable`)
+  projects.forEach((r) => console.log(JSON.stringify(r.fields)));
 
   let welcomeText = `สวัสดีค่าคุณ<@${user_id}>  มาทำ Requested Budget กันนะคะ :heart:`
   let metadata = JSON.stringify({"viewName": "RB_prepopInput", "MS400baseID": ""});
@@ -1554,14 +1554,14 @@ const rbMsg = async (user_id, triggerID) => {
     },
     "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
   }});
-  console.log(`layouted projects = `);
-  data.forEach(n => console.log(JSON.stringify(n)));
+  // console.log(`layouted projects = `);
+  // data.forEach(n => console.log(JSON.stringify(n)));
   
 
   //add into msg blocks
   msg.blocks[2].element.options = data;
-  console.log(`new msg =`);
-  console.log(JSON.stringify(msg));
+  // console.log(`new msg =`);
+  // console.log(JSON.stringify(msg));
 
   const args = {
     "token": process.env.SLACK_BOT_TOKEN,
@@ -1755,14 +1755,14 @@ function delMsg(response_url) {
     if (response_url) {
       //const result = axios.post(response_url, msg);
       axios.post(response_url, msg);
-      //console.log(result);
+      console.log(result);
         resolve();
       }
     else {
       reject();
     }
   }).catch(err => {
-    console.log(err);
+    // console.log(err);
   })
 };
 */
@@ -1779,7 +1779,7 @@ function delMsg(response_url) {
 //(ALSO TYPICAL METHOD WORKS, TOO!)
 function updateMsg(response_url, msg) {
   msg.replace_original = "true";
-  console.log(msg);
+  // console.log(msg);
 	// const result = axios.post(response_url, msg);
 	return axios.post(response_url, msg)
 };
@@ -1795,8 +1795,8 @@ function sendEphemeralMsg(user_id, channel_id, msg, SLACK_BOT_TOKEN) {
           // "text": "test"
       };
 
-      console.log(`args = `);
-      console.log(args);
+      // console.log(`args = `);
+      // console.log(args);
   
     return new Promise((resolve, reject) => {
       const result = axios.post(`${apiUrl}/chat.postEphemeral`, qs.stringify(args));
