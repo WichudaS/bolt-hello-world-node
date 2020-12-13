@@ -121,7 +121,7 @@ app.post('/jotform/hooks' , async function(req, res) {
   //-----------------------for testing (Delete this part when done)---------------------------------
 
 //   const raw = test.DRJotPayload;
-//   const formID = "203155274544453";
+//   const formID = "201670438940455";
 //   const formTitle = "Daily Report" ;
 //   const submissionID = "4724235956026385529";
   
@@ -150,7 +150,7 @@ app.post('/jotform/hooks' , async function(req, res) {
 
   //Do things base on 'formID'
   switch (formID) {
-    case "203155274544453":
+    case "201670438940455":
 
       let DRno = parsed["q116_uniqueId"].split("_")  //change string into array
       DRno.splice(0, 1, parsed["q98_input98"])   // delete XXX, insert project ABB.
@@ -161,7 +161,7 @@ app.post('/jotform/hooks' , async function(req, res) {
         console.log(`★ case send DR approve message in Slack, and save the data to Firestore`);
         
         let DRStatusDB = {
-          "formID": "203155274544453",
+          "formID": "201670438940455",
           "submissionID": submissionID,
           "number": DRno,
           "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
@@ -196,7 +196,7 @@ app.post('/jotform/hooks' , async function(req, res) {
         //-------------------for testing process, delete when the setup is completed, and don't forget to change axios variable, too---------------------
         /*
           let DRStatusDBTEST = {
-            "formID": "203155274544453",
+            "formID": "201670438940455",
             "submissionID": submissionID,
             "number": DRno,
             "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
@@ -1114,7 +1114,7 @@ app.post('/slack/commands', async(req, res) => {
     //create cache document in Firestore
     //const DR_prepopDocPath = `cache/${user_id}/DR/pre-populateURL`;
     var DRJotUrl = {
-      "head": "https://form.jotform.com/203155274544453",
+      "head": "https://form.jotform.com/201670438940455",
       "day": {
         "input22[month]": "",
         "input22[day]": "",
@@ -1414,7 +1414,7 @@ app.post('/slack/actions', async(req, res) => {
 
           //create cache for pre-populateURL
           var DRJotUrl = {
-            "head": "https://form.jotform.com/203155274544453",
+            "head": "https://form.jotform.com/201670438940455",
             "day": {
               "input22[month]": "",
               "input22[day]": "",
