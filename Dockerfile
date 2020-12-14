@@ -1,11 +1,10 @@
 FROM node:12-alpine
 
-WORKDIR /app
+WORKDIR /usr/src/app
+COPY package*.json ./
 
-COPY ["package.json", "package-lock.json*", "./"]
-
-RUN npm install --production
+RUN npm install --only=production
 
 COPY . .
 
-CMD [ "node", "index.js" ]
+CMD ["node", "index"]
