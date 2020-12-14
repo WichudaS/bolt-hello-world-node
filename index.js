@@ -1,7 +1,7 @@
 /*=====THINGS TO DO BEFORE EXPORT TO GITHUB======
   1. Comment slack event
-  // 2. Comment console.log
-  // 3. UNCOMMENT console.log in app.listen 
+  2. Comment console.log
+  3. UNCOMMENT console.log in app.listen 
 */
 
 //=============================INITIALIZE APP=============================
