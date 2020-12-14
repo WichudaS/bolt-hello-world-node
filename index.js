@@ -736,7 +736,7 @@ app.post('/slack/events' , async(req, res) => {
   
   
   //If there are event => Do something
-  /*
+  
   if(req.body.event) {
     const event = req.body.event;
     // console.log(`★ event = ${JSON.stringify(event)}`);
@@ -831,7 +831,7 @@ app.post('/slack/events' , async(req, res) => {
                 des = des.filter(n => n!= null && n!= undefined && n!="");
               }
             }
-            // catch (err) {console.log(err);
+            catch (err) {console.error(err);
             };
             // console.log(`★ project = ${project}`);
             // console.log(`★ workType = ${workType}`);
@@ -1068,7 +1068,7 @@ app.post('/slack/events' , async(req, res) => {
     }
     
   }
-  */
+  
   
   res.end();
 
