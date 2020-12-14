@@ -2,6 +2,7 @@
   1. Comment slack event
   2. Comment console.log
   3. UNCOMMENT console.log in app.listen 
+  UPDATE FROM NEW GLITCH PROJECT
 */
 
 //=============================INITIALIZE APP=============================
