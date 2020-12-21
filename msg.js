@@ -144,113 +144,6 @@ const drMsg = (user_id, channel_id, triggerID, SLACK_BOT_TOKEN) => {
     "private_metadata":metadata,
   };
 
-  let msg_not_used = {
-    "type": "modal",
-    "title": {
-      "type": "plain_text",
-      "text": "Daily Report",
-      "emoji": true
-    },
-    "submit": {
-      "type": "plain_text",
-      "text": "Submit",
-      "emoji": true
-    },
-    "close": {
-      "type": "plain_text",
-      "text": "Cancel",
-      "emoji": true
-    },
-    "blocks": [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": welcomeText
-        }
-      },
-      {
-        "type": "divider"
-      },
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": "*:building_construction: :calendar:   เลือกโครงการและวันที่ก่อนค่ะ*"
-        }
-      },
-      {
-        "type": "actions",
-        "block_id": "DR_inputModal",
-        "elements": [
-          {
-            "type": "static_select",
-            "action_id": "DR_projectList",
-            "placeholder": {
-              "type": "plain_text",
-              "text": "โครงการ",
-              "emoji": true
-            }
-          },
-          {
-            "type": "datepicker",
-            "action_id": "DR_date",
-            "initial_date": initialDatepicker,
-            "placeholder": {
-              "type": "plain_text",
-              "text": "วันที่ใน DR",
-              "emoji": true
-            }
-          }
-        ]
-      },
-      {
-        "type": "context",
-        "elements": [
-          {
-            "type": "plain_text",
-            "text": "(วันที่คือวันที่ใน DR เช่น การบันทึก DR ของเมื่อวาน ให้ใส่วันที่เมื่อวาน)",
-            "emoji": true
-          }
-        ]
-      },
-      {
-        "type": "context",
-        "elements": [
-          {
-            "type": "plain_text",
-            "text": " ",
-            "emoji": true
-          }
-        ]
-      },
-      {
-        "type": "input",
-        "element": {
-          "type": "conversations_select",
-          "action_id": "channelSelected",
-          "default_to_current_conversation": true,
-          "response_url_enabled": true
-        },
-        "label": {
-          "type": "plain_text",
-          "text": ":male-construction-worker: :female-construction-worker:   เลือกห้องที่จะให้ URL ส่งไปหา (เห็นได้คนเดียว)",
-          "emoji": true
-        }
-      },
-      {
-        "type": "context",
-        "elements": [
-          {
-            "type": "mrkdwn",
-            "text": "(หากส่งหาตัวเองในห้องที่กำลังเปิดอยู่ _ไม่ต้องแก้ไขข้อมูล_)"
-          }
-        ]
-      }
-    ],
-    "private_metadata":metadata,
-  }
-
 
   return new Promise((resolve, reject) => {
 
@@ -1480,8 +1373,8 @@ const drRejectMsg = (DBobj, channel, SLACK_BOT_TOKEN) => {
 //-----Pre-populate URL modal------
 const rbMsg = async (user_id, triggerID) => {
   
-  //1. get all projects from Airtable
-  const projects = await baseDR("รายละเอียดโครงการ").select({maxRecords: 100, view: "Jotform-Project list", fields: ["Name", "ชื่อย่อโครงการ", "RecordID"]}).all();
+  //1. get project list from Firestore
+  // const projects = await baseDR("รายละเอียดโครงการ").select({maxRecords: 100, view: "Jotform-Project list", fields: ["Name", "ชื่อย่อโครงการ", "RecordID"]}).all();
   //print test
   // console.log(`projects from Airtable`)
   // projects.forEach((r) => console.log(JSON.stringify(r.fields)));
@@ -1543,25 +1436,40 @@ const rbMsg = async (user_id, triggerID) => {
   };
 
 
-  //layout projectData
-  let data = projects.map((n) => {
+  await fs.db.doc('slack-external-menus/project list').get()
+  .then(documentSnapshot => {
+    let data = documentSnapshot.data();
+    console.log(`Retrived data = ${JSON.stringify(data)}`);
+    console.log(`data = `);
+    console.log(data);
+    msg.blocks[2].element.options = data.options;
+    // console.log(`new msg =`);
+    // console.log(JSON.stringify(msg));
+    return msg;
+  });
 
-    return {
-    "text": {
-      "type": "plain_text",
-      "text": `${n.fields.Name}`,
-      "emoji": true
-    },
-    "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
-  }});
-  // console.log(`layouted projects = `);
-  // data.forEach(n => console.log(JSON.stringify(n)));
+
+
+
+  // //layout projectData
+  // let data = projects.map((n) => {
+
+  //   return {
+  //   "text": {
+  //     "type": "plain_text",
+  //     "text": `${n.fields.Name}`,
+  //     "emoji": true
+  //   },
+  //   "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
+  // }});
+  // // console.log(`layouted projects = `);
+  // // data.forEach(n => console.log(JSON.stringify(n)));
   
 
-  //add into msg blocks
-  msg.blocks[2].element.options = data;
-  // console.log(`new msg =`);
-  // console.log(JSON.stringify(msg));
+  // //add into msg blocks
+  // msg.blocks[2].element.options = data;
+  // // console.log(`new msg =`);
+  // // console.log(JSON.stringify(msg));
 
   const args = {
     "token": process.env.SLACK_BOT_TOKEN,
@@ -1571,7 +1479,7 @@ const rbMsg = async (user_id, triggerID) => {
 
   // open modal
   try {
-    const result = axios.post(`${apiUrl}/views.open`, qs.stringify(args));
+    const result = await axios.post(`${apiUrl}/views.open`, qs.stringify(args));
     return result;
   } catch (error) {
     console.error(error);
