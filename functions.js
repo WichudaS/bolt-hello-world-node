@@ -39,8 +39,7 @@ app.use(bodyParser.json({ verify: rawBodyBuffer }));
 
 
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
-
-
+const now = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
 
 
 //============================GENERAL FUNCTION==============================
@@ -51,6 +50,20 @@ function IsNotEmpty(value) {
   } else {
     return false;
   }
+}
+
+async function SendBUGmsg(functionName, fileName, error) {
+  
+  let msg = `*ERROR from your server* \n>*- parameter/function name:* ${functionName} \n>*- filename:* ${fileName} \n>*- when:* ${now}\n>*- error log:* ${error}`
+
+  let args = {
+    "token" : process.env.SLACK_BOT_TOKEN,
+    "channel": "C0108E7MGEN",
+    "text": msg
+  }
+  
+  return await axios.post('https://slack.com/api/chat.postMessage', qs.stringify(args));
+
 }
 
 
@@ -416,4 +429,8 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
 };
 
 //=============================EXPORT FUNCTIONS=============================
-module.exports = {IsNotEmpty, AT_createRecordsWithRecIDOutput, AT_listATRecordsWithRecIDOutput, AT_listATRecordsWithFULLOBJOutput, DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula};
+module.exports = {
+  IsNotEmpty, SendBUGmsg,
+  AT_createRecordsWithRecIDOutput, AT_listATRecordsWithRecIDOutput, AT_listATRecordsWithFULLOBJOutput, 
+  DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula
+};

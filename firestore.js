@@ -68,10 +68,16 @@ function RBPrepopURLDocRef(user_id) {
   let DBPath = `cache/${user_id}/RB/pre-populateURL`;
   return db.doc(DBPath);
 }
+
+function RBListDocRef(project, RBno) {
+  let DBPath = `project/${project}/documentStatus/RB/RBList/${RBno}`;
+  return db.doc(DBPath);
+}
+
 //=============================EXPORT FUNCTIONS=============================
 module.exports = {db, 
   DRPrepopURLDocRef, DRListDocRef, 
-  RBPrepopURLDocRef};
+  RBPrepopURLDocRef, RBListDocRef};
 
 
 
