@@ -12,10 +12,10 @@ const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXt
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
 
 var today = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
-// console.log(today);
+console.log(today);
 
 var initialDatepicker = dateFormat(today, "yyyy-mm-dd");
-// console.log(`initialDatepicker = ${initialDatepicker}`);
+console.log(`initialDatepicker = ${initialDatepicker}`);
 
 //=============================DECLARE obj 'MOM message'=============================
 const momMsg = () => {
@@ -1439,9 +1439,9 @@ const rbMsg = async (user_id, triggerID) => {
   await fs.db.doc('slack-external-menus/project list').get()
   .then(documentSnapshot => {
     let data = documentSnapshot.data();
-    console.log(`Retrived data = ${JSON.stringify(data)}`);
-    console.log(`data = `);
-    console.log(data);
+    // console.log(`Retrived data = ${JSON.stringify(data)}`);
+    // console.log(`data = `);
+    // console.log(data);
     msg.blocks[2].element.options = data.options;
     // console.log(`new msg =`);
     // console.log(JSON.stringify(msg));
@@ -1462,14 +1462,14 @@ const rbMsg = async (user_id, triggerID) => {
   //   },
   //   "value": `{"ABB": "${n.fields["ชื่อย่อโครงการ"]}" , "ID": "${n.id}"}`
   // }});
-  // // console.log(`layouted projects = `);
-  // // data.forEach(n => console.log(JSON.stringify(n)));
+  // console.log(`layouted projects = `);
+  // data.forEach(n => console.log(JSON.stringify(n)));
   
 
   // //add into msg blocks
   // msg.blocks[2].element.options = data;
-  // // console.log(`new msg =`);
-  // // console.log(JSON.stringify(msg));
+  // console.log(`new msg =`);
+  // console.log(JSON.stringify(msg));
 
   const args = {
     "token": process.env.SLACK_BOT_TOKEN,
@@ -1663,7 +1663,7 @@ function delMsg(response_url) {
     if (response_url) {
       //const result = axios.post(response_url, msg);
       axios.post(response_url, msg);
-      console.log(result);
+      // console.log(result);
         resolve();
       }
     else {

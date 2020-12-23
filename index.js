@@ -1,7 +1,7 @@
 /*=====THINGS TO DO BEFORE EXPORT TO GITHUB======
   1. Comment slack event
-  // 2. Comment console.log
-  // 3. UNCOMMENT console.log in app.listen 
+  2. Comment console.log
+  3. UNCOMMENT console.log in app.listen 
 */
 
 //=============================INITIALIZE APP=============================
@@ -95,34 +95,43 @@ var private_metadata = "";
 var now = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
 var today = dateFormat(now, "yyyy-mm-dd");
 
+//===========================Test with get on index route===========================
+app.get("/", async function(req, res) {
+  // console.log(`RUN test...`);
+
+  res.send(`Hi!, server is running...`);
+
+
+
+});
 
 
 //=============================Jotform webhooks====================================
 app.post('/jotform/hooks' , async function(req, res) {
-  console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
+  // console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
   res.status(200).send("OK");// ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
 
   //================= Parse JotForm request to JSON ===============================
 
   
   const body = JSON.stringify(req.body);
-  console.log(`★ req.body is = \n ${body}`);
+  // console.log(`★ req.body is = \n ${body}`);
   
   const raw = req.body.rawRequest;
-  console.log(`★ raw is = \n ${raw}`);
+  // console.log(`★ raw is = \n ${raw}`);
 
   // JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
   const rawreq = JSON.stringify(req.body.rawRequest);
-  console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
+  // console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
 
   const formID = req.body.formID;
-  console.log(`★ formID is = \n ${formID}`);
+  // console.log(`★ formID is = \n ${formID}`);
 
   const formTitle = req.body.formTitle;
-  console.log(`★ formTitle = ${formTitle}`);
+  // console.log(`★ formTitle = ${formTitle}`);
 
   const submissionID = req.body.submissionID;
-  console.log(`★ submissionID = ${submissionID}`);
+  // console.log(`★ submissionID = ${submissionID}`);
 
   //-----------------------for testing (Delete this part when done)---------------------------------
 
@@ -133,531 +142,36 @@ app.post('/jotform/hooks' , async function(req, res) {
   
   //------------------------------------------------------------------------------------------------
 
-  console.log(`★ formID is = \n ${formID}`);
-  console.log(`★ formTitle = ${formTitle}`);
-  console.log(`★ submissionID = ${submissionID}`);
+  // console.log(`★ formID is = \n ${formID}`);
+  // console.log(`★ formTitle = ${formTitle}`);
+  // console.log(`★ submissionID = ${submissionID}`);
 
 
   var parsed = JSON.parse(raw);
-  console.log(`★ parsed = \n ${parsed}`);
+  // console.log(`★ parsed = \n ${parsed}`);
 
   var key = Object.keys(parsed);
-  console.log(`★ parsed key = \n ${key}`);
+  // console.log(`★ parsed key = \n ${key}`);
 
-  console.log(`★ keylength = ${key.length}`);
+  // console.log(`★ keylength = ${key.length}`);
 
   for (var i = 0; i < key.length; i++) {
     var k = key[i];
 
-    console.log(`★ ${i+1}.${k} = `);
-    console.log(parsed[k]);
+    // console.log(`★ ${i+1}.${k} = `);
+    // console.log(parsed[k]);
   }
   
 
-  //Do things base on 'formTitle' (in case we have to use many formID for projects, but they will all have same formTitle (or at least we could use .includes to filter))
-  // switch (formTitle) {
-  //   case "Daily Report":
-
-  //     let DRno = parsed["q116_uniqueId"].split("_")  //change string into array
-  //     DRno.splice(0, 1, parsed["q98_input98"])   // delete XXX, insert project ABB.
-  //     DRno = DRno.join("_")   //join array back into string
-  //     console.log(`★ DRno = ${DRno}`);
-
-  //     if (!parsed["q176_signature176"]) {  //IF there is no PM sign or PMcomment => request approve, if filled SAVE to GGD and published to channel 
-  //       console.log(`★ case send DR approve message in Slack, and save the data to Firestore`);
-        
-  //       let DRStatusDB = {
-  //         "formID": "201670438940455",
-  //         "submissionID": submissionID,
-  //         "number": DRno,
-  //         "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
-  //         "date": `${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["year"]}`,
-  //         "status": "รออนุมัติ",
-  //         "docType": "DR (Daily Report)",
-  //         "project": parsed["q98_input98"],
-  //         "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
-  //         "submitData": {
-  //           "submitterSlackID": parsed["q210_SESlackID"],
-  //           "submitDate": `${today}`
-  //         },
-  //         "approveData": {
-  //           "approverSlackID": parsed["q209_PMSlackID"],
-  //           "approveDate": "",
-  //           "approveResult": "",
-  //           "approveComment": ""
-  //         },
-  //         "publishedChannel": parsed["q225_publishedChannel"].split(",") ,     //Set to array type in case there are more than one channel to send
-  //         "GGDFolder": parsed["q214_GGDFolder"],
-  //         "fileUpdated": false
-  //       };
-  //       console.log(`DRStatusDB = ${JSON.stringify(DRStatusDB)}`);
-        
-  //       //Route 1. => save into FirestoreDB
-  //       const pushToDRListResult = await fs.DRListDocRef(DRStatusDB.project, DRStatusDB.number).set(DRStatusDB);
-  //       console.log(`★ save to DB completed!, here is the result...`);
-  //       console.log(pushToDRListResult);
-
-  //       //Route 2. => send approve msg to approver in DM
-
-  //       //-------------------for testing process, delete when the setup is completed, and don't forget to change axios variable, too---------------------
-  //       /*
-  //         let DRStatusDBTEST = {
-  //           "formID": "201670438940455",
-  //           "submissionID": submissionID,
-  //           "number": DRno,
-  //           "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
-  //           "date": `${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
-  //           "status": "รออนุมัติ",
-  //           "docType": "DR (Daily Report)",
-  //           "project": parsed["q98_input98"],
-  //           "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
-  //           "submitData": {
-  //             "submitterSlackID": parsed["q210_SESlackID"],
-  //             "submitDate": `${today}`
-  //           },
-  //           "approveData": {
-  //             "approverSlackID": "U010E15TBU0",
-  //             "approveDate": "",
-  //             "approveResult": "",
-  //             "approveComment": ""
-  //           },
-  //           "publishedChannel": ["C01017F0RM0"],     //Set to array type in case there are more than one channel to send
-  //           "GGDFolder": parsed["GGDFolder"],
-  //           "fileUpdated": false
-  //         };
-  //       */
-
-  //       //-----------------------------------------------------------------------------------------------
-  //       let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drApproveMsg(DRStatusDB,process.env.SLACK_BOT_TOKEN)))
-
-  //       console.log(`★ POSTED, there is a result =\n `);
-  //       console.log(postResult.data);
-  //     }
-  //     else {
-  //       // PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks' 
-  //       console.log(`★ PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'`);
-      
-        
-
-  //       //1.Save Jotform data to Airtable (create DR records)
-  //       console.log(`★ 1. Save Jotform data to Airtable (create DR records)`);
-
-  //       var DRdataToAirtable = {
-  //         "Daily Report" : [
-  //           {
-  //             "fields" : {
-  //               "รหัสเอกสาร" : parsed.q116_uniqueId,
-  //               "วันที่" : `${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
-  //               "รายละเอียดงาน" : [], //waiting for recordIDs
-  //               "รายละเอียดพนักงาน" : [],  //waiting for recordIDs
-  //               "รายละเอียดเครื่องจักร" : [],  //waiting for recordIDs
-  //               "อุปสรรค" : parsed["q203_input203"][0][0],
-  //               "อุบัติเหตุ" : parsed["q203_input203"][0][1],
-  //               "ความคิดเห็นเพิ่มเติม" : parsed["q204_input204"][0][0],
-  //               "แปลนแสดงรายละเอียดการทำงาน" : [],
-  //               "รูปถ่ายประจำวัน" : [],
-  //               "สภาพอากาศ" : [],  //waiting for recordIDs
-  //               "PDF Report":[
-  //                 {
-  //                     "filename": `${parsed.q116_uniqueId}-${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
-  //                     "url": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`
-  //                 }
-  //                 ],  
-  //             }
-  //           }
-  //         ],
-  //         "รายละเอียดการทำงาน" : [],
-  //         "รายละเอียดพนักงาน" : [],
-  //         "รายละเอียดคนงาน DC" : [],
-  //         "รายละเอียดคนงาน SUB" : [],
-  //         "รายละเอียดเครื่องจักร" : [],
-  //         "ตารางสภาพอากาศ (WR.)" : [],
-  //       };
-        
-  //       //rearrange some data structure and create record in Airtable
-  //       //'Daily Report' table
-  //       //add site plans
-  //       if(parsed.Pdf) {
-  //         for (var i of parsed.Pdf) {
-  //           DRdataToAirtable["Daily Report"][0]["fields"]["แปลนแสดงรายละเอียดการทำงาน"] = DRdataToAirtable["Daily Report"][0]["fields"]["แปลนแสดงรายละเอียดการทำงาน"].concat({
-  //             "url" : i
-  //           })
-  //         }
-  //       } 
-  //       //add site pics
-  //       if(parsed["input92"]) {
-  //         for (var j of parsed["input92"]) {
-  //           DRdataToAirtable["Daily Report"][0]["fields"]["รูปถ่ายประจำวัน"] = DRdataToAirtable["Daily Report"][0]["fields"]["รูปถ่ายประจำวัน"].concat({
-  //             "url" : j
-  //           })
-  //         }
-  //       } 
-  //       //create record in "Daily Report" table
-  //       const DRrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "Daily Report", DRdataToAirtable["Daily Report"], true, "รหัสเอกสาร");
-  //       console.log(`★ "Daily Report" record created = ${JSON.stringify(DRrec)}`);
-
-
-  //       //add work progress
-  //       if(parsed["q33_input33"]) {
-  //         for(var i of parsed["q33_input33"]) {
-  //           if(i[2]) { //if there is some data about work
-  //             DRdataToAirtable["รายละเอียดการทำงาน"] = DRdataToAirtable["รายละเอียดการทำงาน"].concat(
-  //               {
-  //                 "fields" : {
-  //                   "รายละเอียดงาน" : i[2],
-  //                   "ชื่อคนทำงาน (DC)" : [],  //will be filled when create 'DC' records
-  //                   "ชุดช่างที่ทำงาน (SUB)" : [],  //will be filled when create 'SUB' records
-  //                   "บริเวณที่ทำงาน" : i[3],
-  //                   "ปริมาณงาน" : i[4],
-  //                   "หน่วย" : i[5],
-  //                   "%(คิดจากการจบงานตาม ELEMENTAL CODE )" : i[6],
-  //                   "ELEMENTAL CODE" : i[0],
-  //                   "WORK SECTION CODE" : i[1],
-  //                   "Daily Report" : Object.values(DRrec)
-  //                 }
-  //               }
-  //             )
-  //           }
-  //         }
-  //       }
-  //       //create record in "รายละเอียดการทำงาน" table
-  //       const workRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดการทำงาน", DRdataToAirtable["รายละเอียดการทำงาน"], true, "รายละเอียดงาน");
-  //       console.log(`★ "รายละเอียดการทำงาน" record created = ${JSON.stringify(workRec)}`);
-
-
-  //       //get DC manpower list from Airtable
-  //       var DCmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER DC", {"fields":["Description","Keywords"]} , "Keywords")
-  //       console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
-  //       //add DC data 
-  //       if(parsed["q39_DCTable"]) {
-  //         for(var i of parsed["q39_DCTable"]) {
-  //           if(i[0]) {
-
-  //             let work = Object.keys(workRec).filter((n) => { return n.search(i[1].trim()) != -1 });   //return ARRAY
-  //             console.log(`★ DCwork = ${work}`);
-  //             let DCposition = Object.keys(DCmanpower).filter((m) => { return m.search(i[1].trim()) != -1 });   //return ARRAY
-  //             console.log(`★ DCposition = ${DCposition}`);
-
-  //             DRdataToAirtable["รายละเอียดคนงาน DC"] = DRdataToAirtable["รายละเอียดคนงาน DC"].concat(
-  //               {
-  //                 "fields" : {
-  //                   "ชื่อ-สกุล" : i[0].trim(),
-  //                   "รายละเอียดการทำงาน" : work.length > 0 ? Object.values(work) : [] ,  //waiting for recordIDs
-  //                   "DT" : i[2].trim(),
-  //                   "OT" : i[3].trim(),
-  //                   "Daily Report" : Object.values(DRrec),
-  //                   "MANPOWER DES" : DCposition.length > 0 ? DCmanpower[DCposition[0]] : DCmanpower["คนงาน DC"],  //waiting for recordIDs
-  //                   "Error" : work.length==0 && DCposition.length==0 ? `ERROR! มีการใส่ข้อมูลงานหรือชื่อตำแหน่งผิด: ข้อมูลงานที่ทำจาก Jotform=${i[1]}` : ""
-  //                 }
-  //               }
-  //             )
-  //           }
-  //         }
-  //       }
-  //       //create DC records
-  //       const DCRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน DC", DRdataToAirtable["รายละเอียดคนงาน DC"], true, "ชื่อ-สกุล");
-  //       console.log(`★ "รายละเอียดคนงาน DC" record created = ${JSON.stringify(DCRec)}`);
-
-
-  //       //add subcontract data
-  //       if(parsed["q186_Subcontractor"]) {
-  //         for( var i of parsed["q186_Subcontractor"]) {
-  //           if(i[0] && i[1]) {
-
-  //             //query another base to find SUB data that matches
-  //             let queryData = {
-  //               "fields" : ["ชื่อชุดช่าง", "ชื่อย่อโครงการ (from โครงการ)","DES. ใน Manpower"],
-  //               "filterByFormula" : `AND( {ชื่อชุดช่าง}="${i[1]}",{ชื่อย่อโครงการ (from โครงการ)}="${parsed["q98_input98"]}")`
-  //             };
-  //             let SUBmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseDR, "ชุดช่าง", queryData, "DES. ใน Manpower");  //return OBJECT
-  //             console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
-
-
-  //             let work = Object.keys(workRec).filter((n) => { return n.search(i[0].trim()) != -1 });   //return ARRAY
-  //             console.log(`★ SUBwork = ${work}`);
-
-  //             let errorLog = [];
-  //             if(work.length==0 || Object.keys(SUBmanpower).length!=1) {
-  //               if(work.length==0) {
-  //                 errorLog = errorLog.concat(`รายละเอียดงานไม่ตรงกับตาราง, รายละเอียดงานที่กรอกมา = ${i[0]}`);
-  //               }
-  //               if(Object.keys(SUBmanpower).length==0) {
-  //                 errorLog = errorLog.concat("ไม่มีรายชื่อผรม.นี้ในฐานข้อมูลโครงการ ให้เป็นค่าเริ่มต้น = 'ผรม. งานอื่นๆ'")
-  //               }
-  //               if(Object.keys(SUBmanpower).length>1) {
-  //                 errorLog = errorLog.concat(`มีชื่อผรม.นี้ซ้ำกันในฐานข้อมูล เลือกใช้หมวด Manpower ของรายการแรกที่หาได้ = ${[Object.keys(SUBmanpower)[0]]}`)
-  //               }
-  //             }
-
-
-  //             DRdataToAirtable["รายละเอียดคนงาน SUB"] = DRdataToAirtable["รายละเอียดคนงาน SUB"].concat(
-  //               {
-  //                 "fields" : {
-  //                   "ชุดช่าง" : i[1],
-  //                   "รายละเอียดการทำงาน" : work.length > 0 ? Object.values(work) : [],  //waiting for recordIDs
-  //                   "จำนวนคนงาน" : i[2],
-  //                   "DT" : i[3], 
-  //                   "OT" : i[4] ? i[4] : 0,
-  //                   "MANPOWER SUB" : Object.keys(SUBmanpower).length>0 ? [Object.keys(SUBmanpower)[0]] : ["ผรม. งานอื่นๆ"],  //waiting for recordIDs     
-  //                   "Daily Report" : Object.values(DRrec),
-  //                   "Error" : errorLog.length>0 ? errorLog.join(" และ ") : ""
-  //                 }
-  //               }
-  //               )
-  //           }
-  //         }
-  //       }
-  //       //create SUB records
-  //       const SUBRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน SUB", DRdataToAirtable["รายละเอียดคนงาน SUB"], true, "ชุดช่าง");
-  //       console.log(`★ "รายละเอียดคนงาน SUB" record created = ${JSON.stringify(SUBRec)}`);
-        
-        
-  //       //Query staffManpower keyword list
-  //       let staffManpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER พนักงาน", {"fields":["Description","Keywords"]} , "Keywords")   //return {"keywords" : "recordID"}
-  //       console.log(`★ Staff manpower keywords list from Airtable = ${JSON.stringify(staffManpower)}`);
-  //       //add staff data
-  //       if(parsed["q146_staffTable"]) {
-  //         for(var i of parsed["q146_staffTable"]) {
-  //           if(i[0] && i[1]) {
-
-  //             let staffPosition = Object.keys(staffManpower).filter((m) => { return m.search(i[0].trim()) != -1 });   //return ["keyword"]
-  //             console.log(`★ staffPosition = ${staffPosition}`);
-
-  //             let errorLog = [];
-  //             staffPosition.length == 0 ? errorLog = [...errorLog, "ตำแหน่งนี้ไม่อยู่ในรายการ Manpower ใด  ให้ใช้ค่าเริ่มต้น = 'อื่นๆ'"] : ""
-  //             staffPosition.length >1 ? errorLog = [...errorLog, `มีตำแหน่งนี้ในรายการ Manpower มากกว่า 1 รายการ เลือกใช้ชื่อ manpower แรกที่พบ = ${staffPosition[0]}`] : ""
-  //             DRdataToAirtable["รายละเอียดพนักงาน"] = DRdataToAirtable["รายละเอียดพนักงาน"].concat(
-  //               {
-  //                 "fields" : {
-  //                   "ชื่อ-สกุล" : i[1],
-  //                   "ตำแหน่ง" : [i[0]],
-  //                   "ตำแหน่ง ใน Manpower" : staffPosition.length > 0 ? staffManpower[staffPosition[0]] : ["อื่นๆ"],  //waiting for recordIDs
-  //                   "เวลาทำงาน" : parsed["q208_timeSchedule"],
-  //                   "Daily Report" : Object.values(DRrec),
-  //                   "Error" : errorLog.join(" และ ")
-  //                 }
-  //               }
-  //             )
-  //           }
-  //         }
-  //       }
-  //       //create staff records
-  //       const staffRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดพนักงาน", DRdataToAirtable["รายละเอียดพนักงาน"], true, "ชื่อ-สกุล");
-  //       console.log(`★ "รายละเอียดพนักงาน" record created = ${JSON.stringify(staffRec)}`);
-
-
-
-  //       //Query manpower equipment list (DO NOT USE THIS, ADD NEW ROW WHEN THERE IS NEW EQUIPMENT)
-  //       // var EQmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "EQUIPMENT", {"fields":["Description"]} , "Description")
-  //       console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
-  //       //add equipment data
-  //       if(parsed["q53_input53"]) {
-  //         for( var i of parsed["q53_input53"]) {
-  //           if(i[0]) {
-
-  //             //arrayed "รายละเอียดการทำงาน"'s data
-  //             let EQwork = i[3].split(",").map(w => w.trim());
-
-  //             DRdataToAirtable["รายละเอียดเครื่องจักร"] = DRdataToAirtable["รายละเอียดเครื่องจักร"].concat(
-  //               {
-  //                 "fields" : {
-  //                   "เครื่องจักร" : i[0],
-  //                   "จำนวน" : i[1],
-  //                   "หน่วย" : i[2],
-  //                   "รายละเอียดการทำงาน": EQwork,
-  //                   "Daily Report" : Object.values(DRrec),
-  //                   "EQUIPMENT" : [i[0]],  //waiting for recordIDs
-  //                   "Error" : ""
-  //                 }
-  //               }
-  //             )
-  //           }
-  //         }
-  //       }
-  //       //create equipment records
-  //       const EQrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดเครื่องจักร", DRdataToAirtable["รายละเอียดเครื่องจักร"], true, "เครื่องจักร");
-  //       console.log(`★ "สภาพอากาศ" record created = ${JSON.stringify(EQrec)}`);
-
-
-  //       //add weather data
-  //       if(parsed["q200_input200"]) {
-  //         for( var i of parsed["q200_input200"]) {
-  //           DRdataToAirtable["ตารางสภาพอากาศ (WR.)"] = DRdataToAirtable["ตารางสภาพอากาศ (WR.)"].concat(
-  //             {
-  //               "fields" : {
-  //                 "สภาพอากาศ" : `สภาพอากาศ ${parsed["q22_input22"]["day"]}/${parsed["q22_input22"]["month"]}/${parsed["q22_input22"]["year"]}`,
-  //                 "ช่วงเวลาฝนตก (from Daliy Report)" : i[1] == "ฝนตก" ? i[0] : "" ,
-  //                 "สภาพอากาศ (from Daliy Report)" : [i[1] == "ฝนตก" ? "ฝนตก" : "ปลอดโปร่ง"],
-  //                 "Daily Report" : Object.values(DRrec)
-  //               }
-  //             }
-  //           )
-  //         }
-  //       }
-  //       //create weather records
-  //       const weatherRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "ตารางสภาพอากาศ (WR.)", DRdataToAirtable["ตารางสภาพอากาศ (WR.)"], true, "สภาพอากาศ");
-  //       console.log(`★ "รายละเอียดเครื่องจักร" record created = ${JSON.stringify(weatherRec)}`);
-
-  //       console.log(`★ DRdataToAirtable = ${JSON.stringify(DRdataToAirtable)}`);
-        
-
-
-  //       // 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'"
-  //       console.log("★ 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'");
-  //       // Structure the data
-
-  //       // if there are PM comment => set status to 'AN'
-  //       let status = "";
-  //       let appResult = "";
-  //       let approveCommment = "";
-  //       if(parsed["q204_input204"][0][0]) {   
-  //         status = "อนุมัติตามบันทึก (AN)";
-  //         appResult = "AN";
-  //         approveCommment = parsed["q204_input204"][0][0];
-  //       }
-  //       else {
-  //         status = "อนุมัติ (AP)";
-  //         appResult = "AP";
-  //       }
-      
-  //       let dataToSend = {
-  //         "formID": formID,
-  //         "submissionID": submissionID,
-  //         "number": DRno,
-  //         "name": `${parsed["q98_input98"]}-DR-${parsed["q22_input22"]["year"]}${parsed["q22_input22"]["month"]}${parsed["q22_input22"]["day"]}`,
-  //         "date": `${parsed["q22_input22"]["year"]}-${parsed["q22_input22"]["month"]}-${parsed["q22_input22"]["day"]}`,
-  //         "status": status,
-  //         "docType": "DR (Daily Report)",
-  //         "project": parsed["q98_input98"],
-  //         "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
-  //         "approveData": {
-  //           "approverSlackID": parsed["q209_PMSlackID"],
-  //           "approveDate": `${today}`,
-  //           "approveResult": appResult,
-  //           "approveComment": approveCommment
-  //         },
-  //         "publishedChannel": [parsed["q225_publishedChannel"]],     //Set to array type in case there are more than one channel to send
-  //         "GGDFolder": parsed["q214_GGDFolder"],
-  //         "planAttachments": parsed["Pdf"],
-  //         "sitePicAttachments": parsed["input92"]
-  //       };
-
-  //       console.log(`★ data to send to webhooks = ${JSON.stringify(dataToSend)}`);
-  //       const sendResult = await axios.post("https://hook.integromat.com/f7yjit3q9lyz7q31eqvrh2susg53td39", qs.stringify(dataToSend))
-  //       console.log(`★ Webhooks posted, here is the result = ${JSON.stringify(sendResult.data)}`);
-
-  //     }
-
-  //   break;
-  
-  //   case "Requested budget":
-  //     console.log(`★ RB Jotform submitted => 1. set data layout, 2. pull DocStatus from Firestore, 3.update Firestore, 4. Update Airtable`);
-
-  //     let RBno = `${parsed["q15_projectAbb"]}_RB_${parsed["q4_runningNo"]}`;
-  //     console.log(`★ RBno = ${RBno}`);
-
-  //     //set data layout
-  //     //create firestore document status [initial data]
-  //     let RBStatusDB = {
-  //                 "formID": formID,
-  //                 "submissionID": submissionID,
-  //                 "number": RBno,
-  //                 "name": `${parsed["q15_projectAbb"]}-RB-${parsed["q6_date"]["year"]}${parsed["q6_date"]["month"]}${parsed["q6_date"]["day"]}`,
-  //                 "date": `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["year"]}`,
-  //                 "status": "รออนุมัติ",
-  //                 "docType": "RB (Requested Budget)",
-  //                 "project": parsed["q15_projectAbb"],
-  //                 "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
-  //                 "submitData": {
-  //                   "submitterSlackID": parsed["q120_CESlackID"],
-  //                   "submitDate": `${today}`
-  //                 },
-  //                 "PMapproveData": {
-  //                   "approverSlackID": parsed["q122_PMSlackID"],
-  //                   "approveDate": "",
-  //                   "approveResult": "",
-  //                   "approveComment": ""
-  //                 },
-  //                 "boardApproveData": {
-  //                   "approverSlackID": "",
-  //                   "approveDate": "",
-  //                   "approveResult": "",
-  //                   "approveComment": ""
-  //                 },
-  //                 "publishedChannel": parsed["q137_publishedChannel"],     //Set to array type in case there are more than one channel to send
-  //                 "GGDFolder": parsed["q136_GGDFolder"],
-  //                 "fileUpdated": false
-  //     }
-  //     console.log(`RBStatusDB = ${JSON.stringify(RBStatusDB)}`);
-
-  //     //Airtable data [initial data]
-  //     //RB summary
-  //     let RBsummary = {
-  //       "RB No": RBno,     //"HO9_RB_002"    
-  //       "วันที่":  `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["year"]}`,     //"2020-12-08"
-  //       "Revision": parsed["q132_Revision"],       //  "00"
-  //       "Project":  parsed["q15_projectAbb"],       //  "HO9"
-  //       "รายละเอียดการขออนุมัติ": parsed["q131_input131"],        //  "Gutter Stainless Steel 1.2 mm."       // ["recc4g3qmqfzGXpZi"],         
-  //       "Status":  "Waiting for approve",     //  ใช้สถานะนี้เริ่มต้นเสมอ
-  //       "เอกสารอ้างอิง": parsed["q63_refDoc"],        //"HO9/PR/002"
-  //       "เหตุผลในการร้องขอ RB": parsed["q61_Rbreason"],           //  "มีงานเพิ่มนอกเหนือจากการทำงานครั้งแรก เพิ่ม overflow\n"
-  //     }
-
-  //     //RB details
-
-  //     let loop = parsed["q28_resource"].filter(i => i[1] != "");  //layouting every resource row that is not empty
-
-  //     let RBdetails = loop.map((i) => {
-  //       return {
-  //         "fields" : {
-  //           "ID": `${parsed["q15_projectAbb"]}_RB_${parsed["q4_runningNo"]}-${i[1]}` ,            // "HO9_RB_001-Gutter Stainless Steel 1.2 mm."
-  //           "Resource Name": i[1]   ,         //"Gutter Stainless Steel 1.2 mm."
-  //           "Original BG Amount":  i[4],           //  2268.66,
-  //           "Ordered BG Amount": i[7],            //29000
-  //           "RB No": RBno,    
-  //           "Linked Budget": "",        //code after setup BGgrouping
-  //           "Resource Code": parsed["q54_description"][`${i[0].split(",")[0].trim().split(".")[1]-1}`][4],
-  //           "Original BG Q'ty": i[2] ,           //  450
-  //           "Original BG Unit Rate": i[3] ,          //  5.015
-  //           "Ordered BG Unit Rate": i[6],             //5.01
-  //           "Ordered BG Q'ty": i[5],             //  5788
-  //           "Remarks": i[9],               //"หมายเหตุ"
-  //         }
-  //       }
-  //     })
-
-
-  //     //check if there is existing record which RBno is matched?
-  //     //get projectRBstatusData
-  //     let RBstatus = await fs.db.doc(`/project/${parsed["q15_projectAbb"]}/documentStatus/RB/RBList`).get()
-  //     .then((documentSnapshot) => {return documentSnapshot.data()} );   //[]?
-
-  //     console.log(`★ RBstatus = ${JSON.stringify(RBstatus)}`);
-
-
-
-
-      
-      
-      
-      
-      
-
-  //   break;
-    
-
-  //   default:
-  //   break;
-  // }
 
   if(formTitle == "Daily Report") {
     let DRno = parsed["q116_uniqueId"].split("_")  //change string into array
     DRno.splice(0, 1, parsed["q98_input98"])   // delete XXX, insert project ABB.
     DRno = DRno.join("_")   //join array back into string
-    console.log(`★ DRno = ${DRno}`);
+    // console.log(`★ DRno = ${DRno}`);
 
     if (!parsed["q176_signature176"]) {  //IF there is no PM sign or PMcomment => request approve, if filled SAVE to GGD and published to channel 
-      console.log(`★ case send DR approve message in Slack, and save the data to Firestore`);
+      // console.log(`★ case send DR approve message in Slack, and save the data to Firestore`);
       
       let DRStatusDB = {
         "formID": "201670438940455",
@@ -683,12 +197,12 @@ app.post('/jotform/hooks' , async function(req, res) {
         "GGDFolder": parsed["q214_GGDFolder"],
         "fileUpdated": false
       };
-      console.log(`DRStatusDB = ${JSON.stringify(DRStatusDB)}`);
+      // console.log(`DRStatusDB = ${JSON.stringify(DRStatusDB)}`);
       
       //Route 1. => save into FirestoreDB
       const pushToDRListResult = await fs.DRListDocRef(DRStatusDB.project, DRStatusDB.number).set(DRStatusDB);
-      console.log(`★ save to DB completed!, here is the result...`);
-      console.log(pushToDRListResult);
+      // console.log(`★ save to DB completed!, here is the result...`);
+      // console.log(pushToDRListResult);
 
       //Route 2. => send approve msg to approver in DM
 
@@ -723,17 +237,17 @@ app.post('/jotform/hooks' , async function(req, res) {
       //-----------------------------------------------------------------------------------------------
       let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drApproveMsg(DRStatusDB,process.env.SLACK_BOT_TOKEN)))
 
-      console.log(`★ POSTED, there is a result =\n `);
-      console.log(postResult.data);
+      // console.log(`★ POSTED, there is a result =\n `);
+      // console.log(postResult.data);
     }
     else {
       // PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks' 
-      console.log(`★ PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'`);
+      // console.log(`★ PM Signed => 1. Save Jotform data to Airtable (create DR records)  2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'`);
     
       
 
       //1.Save Jotform data to Airtable (create DR records)
-      console.log(`★ 1. Save Jotform data to Airtable (create DR records)`);
+      // console.log(`★ 1. Save Jotform data to Airtable (create DR records)`);
 
       var DRdataToAirtable = {
         "Daily Report" : [
@@ -787,7 +301,7 @@ app.post('/jotform/hooks' , async function(req, res) {
       } 
       //create record in "Daily Report" table
       const DRrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "Daily Report", DRdataToAirtable["Daily Report"], true, "รหัสเอกสาร");
-      console.log(`★ "Daily Report" record created = ${JSON.stringify(DRrec)}`);
+      // console.log(`★ "Daily Report" record created = ${JSON.stringify(DRrec)}`);
 
 
       //add work progress
@@ -815,21 +329,21 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create record in "รายละเอียดการทำงาน" table
       const workRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดการทำงาน", DRdataToAirtable["รายละเอียดการทำงาน"], true, "รายละเอียดงาน");
-      console.log(`★ "รายละเอียดการทำงาน" record created = ${JSON.stringify(workRec)}`);
+      // console.log(`★ "รายละเอียดการทำงาน" record created = ${JSON.stringify(workRec)}`);
 
 
       //get DC manpower list from Airtable
       var DCmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER DC", {"fields":["Description","Keywords"]} , "Keywords")
-      console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
+      // console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
       //add DC data 
       if(parsed["q39_DCTable"]) {
         for(var i of parsed["q39_DCTable"]) {
           if(i[0]) {
 
             let work = Object.keys(workRec).filter((n) => { return n.search(i[1].trim()) != -1 });   //return ARRAY
-            console.log(`★ DCwork = ${work}`);
+            // console.log(`★ DCwork = ${work}`);
             let DCposition = Object.keys(DCmanpower).filter((m) => { return m.search(i[1].trim()) != -1 });   //return ARRAY
-            console.log(`★ DCposition = ${DCposition}`);
+            // console.log(`★ DCposition = ${DCposition}`);
 
             DRdataToAirtable["รายละเอียดคนงาน DC"] = DRdataToAirtable["รายละเอียดคนงาน DC"].concat(
               {
@@ -849,7 +363,7 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create DC records
       const DCRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน DC", DRdataToAirtable["รายละเอียดคนงาน DC"], true, "ชื่อ-สกุล");
-      console.log(`★ "รายละเอียดคนงาน DC" record created = ${JSON.stringify(DCRec)}`);
+      // console.log(`★ "รายละเอียดคนงาน DC" record created = ${JSON.stringify(DCRec)}`);
 
 
       //add subcontract data
@@ -863,11 +377,11 @@ app.post('/jotform/hooks' , async function(req, res) {
               "filterByFormula" : `AND( {ชื่อชุดช่าง}="${i[1]}",{ชื่อย่อโครงการ (from โครงการ)}="${parsed["q98_input98"]}")`
             };
             let SUBmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseDR, "ชุดช่าง", queryData, "DES. ใน Manpower");  //return OBJECT
-            console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
+            // console.log(`★ Matched manpower SUB = ${JSON.stringify(SUBmanpower)}`);
 
 
             let work = Object.keys(workRec).filter((n) => { return n.search(i[0].trim()) != -1 });   //return ARRAY
-            console.log(`★ SUBwork = ${work}`);
+            // console.log(`★ SUBwork = ${work}`);
 
             let errorLog = [];
             if(work.length==0 || Object.keys(SUBmanpower).length!=1) {
@@ -902,19 +416,19 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create SUB records
       const SUBRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดคนงาน SUB", DRdataToAirtable["รายละเอียดคนงาน SUB"], true, "ชุดช่าง");
-      console.log(`★ "รายละเอียดคนงาน SUB" record created = ${JSON.stringify(SUBRec)}`);
+      // console.log(`★ "รายละเอียดคนงาน SUB" record created = ${JSON.stringify(SUBRec)}`);
       
       
       //Query staffManpower keyword list
       let staffManpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "MANPOWER พนักงาน", {"fields":["Description","Keywords"]} , "Keywords")   //return {"keywords" : "recordID"}
-      console.log(`★ Staff manpower keywords list from Airtable = ${JSON.stringify(staffManpower)}`);
+      // console.log(`★ Staff manpower keywords list from Airtable = ${JSON.stringify(staffManpower)}`);
       //add staff data
       if(parsed["q146_staffTable"]) {
         for(var i of parsed["q146_staffTable"]) {
           if(i[0] && i[1]) {
 
             let staffPosition = Object.keys(staffManpower).filter((m) => { return m.search(i[0].trim()) != -1 });   //return ["keyword"]
-            console.log(`★ staffPosition = ${staffPosition}`);
+            // console.log(`★ staffPosition = ${staffPosition}`);
 
             let errorLog = [];
             staffPosition.length == 0 ? errorLog = [...errorLog, "ตำแหน่งนี้ไม่อยู่ในรายการ Manpower ใด  ให้ใช้ค่าเริ่มต้น = 'อื่นๆ'"] : ""
@@ -936,13 +450,13 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create staff records
       const staffRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดพนักงาน", DRdataToAirtable["รายละเอียดพนักงาน"], true, "ชื่อ-สกุล");
-      console.log(`★ "รายละเอียดพนักงาน" record created = ${JSON.stringify(staffRec)}`);
+      // console.log(`★ "รายละเอียดพนักงาน" record created = ${JSON.stringify(staffRec)}`);
 
 
 
       //Query manpower equipment list (DO NOT USE THIS, ADD NEW ROW WHEN THERE IS NEW EQUIPMENT)
       // var EQmanpower = await fn.AT_listATRecordsWithRecIDOutput(baseWR, "EQUIPMENT", {"fields":["Description"]} , "Description")
-      console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
+      // console.log(`★ DC manpower keywords list from Airtable = ${JSON.stringify(DCmanpower)}`);
       //add equipment data
       if(parsed["q53_input53"]) {
         for( var i of parsed["q53_input53"]) {
@@ -969,7 +483,7 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create equipment records
       const EQrec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "รายละเอียดเครื่องจักร", DRdataToAirtable["รายละเอียดเครื่องจักร"], true, "เครื่องจักร");
-      console.log(`★ "สภาพอากาศ" record created = ${JSON.stringify(EQrec)}`);
+      // console.log(`★ "สภาพอากาศ" record created = ${JSON.stringify(EQrec)}`);
 
 
       //add weather data
@@ -989,14 +503,14 @@ app.post('/jotform/hooks' , async function(req, res) {
       }
       //create weather records
       const weatherRec = await fn.AT_createRecordsWithRecIDOutput(baseWR, "ตารางสภาพอากาศ (WR.)", DRdataToAirtable["ตารางสภาพอากาศ (WR.)"], true, "สภาพอากาศ");
-      console.log(`★ "รายละเอียดเครื่องจักร" record created = ${JSON.stringify(weatherRec)}`);
+      // console.log(`★ "รายละเอียดเครื่องจักร" record created = ${JSON.stringify(weatherRec)}`);
 
-      console.log(`★ DRdataToAirtable = ${JSON.stringify(DRdataToAirtable)}`);
+      // console.log(`★ DRdataToAirtable = ${JSON.stringify(DRdataToAirtable)}`);
       
 
 
       // 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'"
-      console.log("★ 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'");
+      // console.log("★ 2.Save PDF report & attachments to GGD then save to DB & publish message to channel afterward in '/integromat/hooks'");
       // Structure the data
 
       // if there are PM comment => set status to 'AN'
@@ -1035,17 +549,17 @@ app.post('/jotform/hooks' , async function(req, res) {
         "sitePicAttachments": parsed["input92"]
       };
 
-      console.log(`★ data to send to webhooks = ${JSON.stringify(dataToSend)}`);
+      // console.log(`★ data to send to webhooks = ${JSON.stringify(dataToSend)}`);
       const sendResult = await axios.post("https://hook.integromat.com/f7yjit3q9lyz7q31eqvrh2susg53td39", qs.stringify(dataToSend))
-      console.log(`★ Webhooks posted, here is the result = ${JSON.stringify(sendResult.data)}`);
+      // console.log(`★ Webhooks posted, here is the result = ${JSON.stringify(sendResult.data)}`);
 
     }
   }
   else if(formTitle == "Requested budget") {
-    console.log(`★ RB Jotform submitted => 1. set data layout, 2. pull DocStatus from Firestore, 3.update Firestore, 4. Update Airtable`);
+    // console.log(`★ RB Jotform submitted => 1. set data layout, 2. pull DocStatus from Firestore, 3.update Firestore, 4. Update Airtable`);
 
     let RBno = `${parsed["q15_projectAbb"]}_RB_${parsed["q4_runningNo"]}`;
-    console.log(`★ RBno = ${RBno}`);
+    // console.log(`★ RBno = ${RBno}`);
 
     //set data layout
     //create firestore document status [initial data]
@@ -1079,7 +593,7 @@ app.post('/jotform/hooks' , async function(req, res) {
       "GGDFolder": parsed["q136_GGDFolder"],
       "fileUpdated": false
     }
-    console.log(`RBStatusDB = ${JSON.stringify(RBStatusDB)}`);
+    // console.log(`RBStatusDB = ${JSON.stringify(RBStatusDB)}`);
 
     //Airtable data [initial data]
     //RB summary
@@ -1095,8 +609,8 @@ app.post('/jotform/hooks' , async function(req, res) {
     }
 
     //RB details
-
-    let loop = parsed["q28_resource"].filter(i => i[1] != "");  //layouting every resource row that is not empty
+    //layouting every resource row that is not empty
+    let loop = parsed["q28_resource"].filter(i => i[1] != "");  
 
     let RBdetails = loop.map((i) => {
       return {
@@ -1120,10 +634,56 @@ app.post('/jotform/hooks' , async function(req, res) {
 
     //check if there is existing record which RBno is matched?
     //get projectRBstatusData
-    let RBstatus = await fs.db.collection(`/project/${parsed["q15_projectAbb"]}/documentStatus/RB/RBList`).where().get()
-    .then((documentSnapshot) => {return documentSnapshot.data()} );   //[]?
+    let RBstatus = await fs.db.collection(`/project/${parsed["q15_projectAbb"]}/documentStatus/RB/RBList`).where("number", "==", RBno).limit(1).get()
+    .then((Snapshot) => {
+      if(Snapshot.empty) {
+        // console.log(`★ no document matches your search`);
+        return ;
+      }
+      let result = [];
+      Snapshot.forEach((doc) => { result = [...result, doc.data()] } );
+      return result;   //[]?
+    });    // return undefined or []
 
-    console.log(`★ RBstatus = ${JSON.stringify(RBstatus)}`);
+    // console.log(`★ RBstatus = ${JSON.stringify(RBstatus)}`)
+
+    if(!RBstatus) {    //no existing RBno => create new records
+      //create FS doc 'w/o changing template data'
+      try {
+        let FScreatedResult = await fs.RBListDocRef(RBstatus.project, RBstatus.number).set(RBStatusDB);
+        // console.log(`★ save to DB completed!, here is the result...`);
+        // console.log(FScreatedResult);
+      } 
+      catch (error) {
+        await fn.SendBUGmsg("FScreatedResult", "index.js", error)
+      }
+      
+      //create AT records
+      let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(parsed["q138_MS400"])
+      //RB summary
+      try {
+        let RBsummaryResult = await baseMS400("Requested Budget Summary").create(RBsummary)
+        // console.log(`★ RB summary created, here is the result...`);
+        // console.log(RBsummaryResult);
+      } catch (error) {
+        await fn.SendBUGmsg("RBsummaryResult", "index.js", error)
+      }
+      //RB details
+      try {
+        let RBdetailsResult = await baseMS400("MS400").create(RBdetails)
+        // console.log(`★ RB summary created, here is the result...`);
+        // console.log(RBdetailsResult);
+      } catch (error) {
+        await fn.SendBUGmsg("RBdetailsResult", "index.js", error)
+      }
+
+    }
+    else {    //this RBno is exist => update records
+
+    }
+
+
+
 
 
   }
@@ -1137,13 +697,13 @@ app.post('/jotform/hooks' , async function(req, res) {
 app.post('/integromat/hooks', async function(req,res) {
   res.status(200).send("OK");
   //LOG REQUEST===============    
-  console.log("---------------Integromat WEBHOOKS REQUEST STARTS HERE---------------");
-  console.log("----------req.body----------");   
-  console.log(req.body);  
-  console.log("----------req.body.string----------");   
-  console.log(JSON.stringify(req.body)); 
+  // console.log("---------------Integromat WEBHOOKS REQUEST STARTS HERE---------------");
+  // console.log("----------req.body----------");   
+  // console.log(req.body);  
+  // console.log("----------req.body.string----------");   
+  // console.log(JSON.stringify(req.body)); 
    
-  console.log("---------------Integromat WEBHOOKS REQUEST ENDS HERE---------------"); 
+  // console.log("---------------Integromat WEBHOOKS REQUEST ENDS HERE---------------"); 
 
   //check if it is Document process?
   if(req.body.docType) {
@@ -1155,13 +715,13 @@ app.post('/integromat/hooks', async function(req,res) {
 
         //check if it's not a fileUpdate
         if (!fileUpdated) {
-          console.log(`★ New DR Approved from PM, Save Data to Airtable, Update DB, send publish messages`);
+          // console.log(`★ New DR Approved from PM, Save Data to Airtable, Update DB, send publish messages`);
             //Route 1. save to Airtable  ★ waiting for approve
             //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
-            console.log(`★ save to Airtable`);
+            // console.log(`★ save to Airtable`);
             //--------------------------------------------------------------------------------------
             //Route 2. update DB
-            console.log(`★ update DR DB`);
+            // console.log(`★ update DR DB`);
             let DRApproveData = {
               "status": status,
               "pdfLink": pdfLink,  
@@ -1176,49 +736,49 @@ app.post('/integromat/hooks', async function(req,res) {
             };
 
             const DRApproveResult = await fs.DRListDocRef(project, number).update(DRApproveData);
-            console.log(DRApproveResult);
+            // console.log(DRApproveResult);
 
             //get DBData
-            console.log(`★ Get all this DR Data from DB to form a publish message`);
+            // console.log(`★ Get all this DR Data from DB to form a publish message`);
 
             DRApproveData = await fs.DRListDocRef(project, number).get().then(documentSnapshot => {
               let fields = documentSnapshot.data();
               return fields;
             })
-            console.log(`★ data from DB = `);
-            console.log(JSON.stringify(DRApproveData));
+            // console.log(`★ data from DB = `);
+            // console.log(JSON.stringify(DRApproveData));
 
 
             //send published message according to status
-            console.log(`★ send published message according to status`);
+            // console.log(`★ send published message according to status`);
 
             for (const channel of DRApproveData.publishedChannel) {
-              console.log(`★ channel to post = ${channel}`);
+              // console.log(`★ channel to post = ${channel}`);
               let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drPublishedMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
 
-              console.log(`★ Publish message POSTED, here is a result =\n `);
-              console.log(postResult.data);
+              // console.log(`★ Publish message POSTED, here is a result =\n `);
+              // console.log(postResult.data);
             }
 
             //if ApproveResult is 'AN', send comment message to SE
             if(DRApproveData.approveData.approveResult == "AN") {
-              console.log(`★ "AN" case, send DM back to SE to edit the submission, too.`);
+              // console.log(`★ "AN" case, send DM back to SE to edit the submission, too.`);
               let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drCommentMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)));
 
-              console.log(`★ DM Comment to submitter, here is a result =\n `);
-              console.log(postResult.data);
+              // console.log(`★ DM Comment to submitter, here is a result =\n `);
+              // console.log(postResult.data);
             }
 
         } 
         else {
-          console.log(`Someone edit a file after it is was approved!, send notification message to published channel`);
+          // console.log(`Someone edit a file after it is was approved!, send notification message to published channel`);
 
           //Route 1. save to Airtable  ★ waiting for approve
           //----------------------------------เว้นไว้ใส่โค้ด Airtable----------------------------------
-          console.log(`★ save to Airtable`);
+          // console.log(`★ save to Airtable`);
           //--------------------------------------------------------------------------------------
           //Route 2. update DB
-          console.log(`★ update DR DB`);
+          // console.log(`★ update DR DB`);
           let DRApproveData = {
             "pdfLink": pdfLink,  
             "GGDFolder": GGDFolder,
@@ -1226,26 +786,26 @@ app.post('/integromat/hooks', async function(req,res) {
           };
 
           const DRApproveResult = await fs.DRListDocRef(project, number).update(DRApproveData);
-          console.log(DRApproveResult);
+          // console.log(DRApproveResult);
 
           //get DBData
-          console.log(`★ Get all this DR Data from DB to form a publish message`);
+          // console.log(`★ Get all this DR Data from DB to form a publish message`);
 
           DRApproveData = await fs.DRListDocRef(project, number).get().then(documentSnapshot => {
             let fields = documentSnapshot.data();
             return fields;
           })
-          console.log(`★ data from DB = `);
-          console.log(JSON.stringify(DRApproveData));
+          // console.log(`★ data from DB = `);
+          // console.log(JSON.stringify(DRApproveData));
 
           //send published notification message
-          console.log(`★ send published notification message`);
+          // console.log(`★ send published notification message`);
 
           for (const channel of DRApproveData.publishedChannel) {
             let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drFileUpdateMsg(DRApproveData, channel, process.env.SLACK_BOT_TOKEN)));
 
-            console.log(`★ Publish message POSTED, here is a result =\n `);
-            console.log(postResult.data);
+            // console.log(`★ Publish message POSTED, here is a result =\n `);
+            // console.log(postResult.data);
 
           }
         }
@@ -1272,20 +832,20 @@ app.post('/slack/events' , async(req, res) => {
   res.status(200); 
   
   //LOG REQUEST===============    
-      console.log("---------------" + req.body.type +" REQUEST STARTS HERE---------------");
-      console.log("----------req.body.type----------");   
-      console.log(req.body.type);    
-      console.log("----------req.body----------");   
-      console.log(req.body);  
-      console.log("----------req.body.string----------");   
-      console.log(JSON.stringify(req.body)); 
-      console.log("----------req.body.context----------");   
-      console.log(req.body.context);       
-      console.log("----------req.body.payload----------");   
-      console.log(req.body.payload);  
-      console.log("----------req.body.event----------");   
-      console.log(req.body.event);    
-      console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
+      // console.log("---------------" + req.body.type +" REQUEST STARTS HERE---------------");
+      // console.log("----------req.body.type----------");   
+      // console.log(req.body.type);    
+      // console.log("----------req.body----------");   
+      // console.log(req.body);  
+      // console.log("----------req.body.string----------");   
+      // console.log(JSON.stringify(req.body)); 
+      // console.log("----------req.body.context----------");   
+      // console.log(req.body.context);       
+      // console.log("----------req.body.payload----------");   
+      // console.log(req.body.payload);  
+      // console.log("----------req.body.event----------");   
+      // console.log(req.body.event);    
+      // console.log("---------------" + req.body.type +" REQUEST ENDS HERE---------------");     
   //RESPONSE TO EVENT CASES===============,
   switch (req.body.type) {
     //RESPONSE TO URL VERIFICATION===============  
@@ -1313,17 +873,17 @@ app.post('/slack/events' , async(req, res) => {
 
   if(req.body.event) {
     const event = req.body.event;
-    console.log(`★ event = ${JSON.stringify(event)}`);
+    // console.log(`★ event = ${JSON.stringify(event)}`);
 
     //Save every HUMAN messages in every channel to Airtable ==============================================
-    if(event.type == "message" && !(event.subtype=="bot_message") && !(event.hidden) && !(req.body.hidden)) {
-      console.log(`★ Save every message in every channel to Airtable for analytics`);
+    if(event.type == "message" && !(event.subtype=="bot_message") && !(event.hidden) && !(req.body.hidden) && !event.bot_profile && !event.bot_id) {
+      // console.log(`★ Save every message in every channel to Airtable for analytics`);
       res.sendStatus(204);
       
       var actType = event.type;
       var actSubtype = event.subtype;
       var text = event.text;
-      var dateTime = dateFormat ("isoDateTime").split("+")[0];
+      var dateTime = dateFormat ("isoDateTime")
       var poster = event.user;
       var channel = event.channel;
       var attachments = event.attachments ? event.attachments[0].text || event.attachments[0].fallback: "";
@@ -1343,36 +903,59 @@ app.post('/slack/events' , async(req, res) => {
       
 
       var eventLayout = {
-        "fields": {
-          "Activity Type": actType,
-          "Avtivity Subtype": actSubtype,
-          "Text": text,
-          "Posted time": dateTime,
-          "Poster ID": poster,
-          "Channel ID": channel,
-          "Shared message" : attachments,
-          "File attachments" : fileAttachments
-        }
+        "Activity Type": actType,
+        "Activity Subtype": actSubtype,
+        "Text": text,
+        "Posted time": dateTime,
+        "Poster ID": poster,
+        "Channel ID": channel,
+        "Shared message" : attachments,
+        "File attachments" : fileAttachments,
+        "Slack payload": JSON.stringify(event)
       };
 
+      // console.log(`★ event layout to be saved =`);
+      // console.log(JSON.stringify(eventLayout));
 
-      console.log(`★ event layout to be saved =`);
-      console.log(JSON.stringify(eventLayout));
 
-      //create new record in Airtable
-      let recordCreatedResult = await fn.AT_createRecordsWithRecIDOutput(baseSlackLog, "Message logs", [eventLayout], true, "Poster ID")
-      console.log(`★ recordcreateresult = `);
-      console.log(recordCreatedResult);
-
+      //check if there are already identical records in the table
+      var filterFormula = `AND(
+        {Text}='${text}',
+        {File attachments}='${fileAttachments}',
+        {Channel ID}='${channel}',
+        {Activity Type}='${actType}',
+        {Activity Subtype}='${actSubtype}',
+        {Poster ID}='${poster}',
+        {Shared message}='${attachments}'
+      )`;
+      var queryParam = {
+        "maxRecords": 1,
+        "view":"For Server Query (3 min tolerance)",
+        "filterByFormula": filterFormula,
+        "fields": ["Posted time"] 
+      }
+      // console.log(queryParam)
+      try {
+        var existingRec = await baseSlackLog("Message logs").select(queryParam)
+      } catch (error) {
+        await fn.SendBUGmsg("existingRec", "index.js", error)
+      }
+      if(!existingRec.id) {
+        //no existing record => create new record
+        //create new record in Airtable
+        try {
+          let recordCreatedResult = await baseSlackLog("Message logs").create(eventLayout, {typecast: true})
+        } catch (error) {
+          await fn.SendBUGmsg("recordCreatedResult", "index.js", error)
+        }
+      }
 
     }
-
-
 
     
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable' ======================
     if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
-      console.log("★ CASE: Save jibble message to Airtable");
+      // console.log("★ CASE: Save jibble message to Airtable");
       res.sendStatus(204);
       //===DECLARE VAR====
 
@@ -1380,7 +963,7 @@ app.post('/slack/events' , async(req, res) => {
   // *UPDATE* แก้ format ชื่อ
       var name = [];
       name = name.concat(event.text.split("*").splice(0,1).reduce((n) => n).replace("DC" , "").trim());
-      console.log(`★ name = ${name}`);
+      // console.log(`★ name = ${name}`);
       var project = [];
       var workType = [];
       var des = [];
@@ -1388,7 +971,7 @@ app.post('/slack/events' , async(req, res) => {
 
       if(event.attachments) {
         for (var i of event.attachments) {
-          console.log("★ i = " + JSON.stringify(i));
+          // console.log("★ i = " + JSON.stringify(i));
           if (Object.keys(i).includes("text")) {
             try{
               var projectAndWork = i.text.split("*").splice(1,1).toString().split("_");
@@ -1407,40 +990,40 @@ app.post('/slack/events' , async(req, res) => {
             }
             catch (err) {console.error(err);
             };
-            console.log(`★ project = ${project}`);
-            console.log(`★ workType = ${workType}`);
-            console.log(`★ des = ${des}`);
+            // console.log(`★ project = ${project}`);
+            // console.log(`★ workType = ${workType}`);
+            // console.log(`★ des = ${des}`);
           }
           else if (Object.keys(i).includes("image_url")) {
             imgURL = i.image_url;
-            console.log(`★ imgURL = ${imgURL}`);
+            // console.log(`★ imgURL = ${imgURL}`);
           }
           else {
-            console.log(`★ project = ${project}`);
-            console.log(`★ workType = ${workType}`);
-            console.log(`★ des = ${des}`);
-            console.log(`★ imgURL = ${imgURL}`);
+            // console.log(`★ project = ${project}`);
+            // console.log(`★ workType = ${workType}`);
+            // console.log(`★ des = ${des}`);
+            // console.log(`★ imgURL = ${imgURL}`);
           }
         }
       }
 
       // var dateTime = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
       var dateTime = new Date(new Date().toLocaleString());
-      console.log(`★ dateTime = ${dateTime}`);
+      // console.log(`★ dateTime = ${dateTime}`);
 
       var day = dateFormat(dateTime, "dd/mm/yyyy");
-      console.log(`★ day = ${day}`);
+      // console.log(`★ day = ${day}`);
 
       const recordPK = `${name} - ${day}`;
       recordPK.toString();
-      console.log(`★ recordPK = ${recordPK}`);
+      // console.log(`★ recordPK = ${recordPK}`);
 
 
       //===DECLARE FUNCTION===
   // *UPDATE* แยกเป็น staff กับ คนงาน
         //Airtable Layout
       function JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL) {
-        console.log("=====Jibbled in layout=====");
+        // console.log("=====Jibbled in layout=====");
         return new Promise((resolve, reject) => {
 
           if (event.text.includes("jibbled")) {
@@ -1476,7 +1059,7 @@ app.post('/slack/events' , async(req, res) => {
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
 
-              console.log(JSON.stringify(layoutArray));
+              // console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
 
@@ -1484,21 +1067,21 @@ app.post('/slack/events' , async(req, res) => {
             reject();
           }
         }).catch(err => {
-          console.log(err);
+          // console.log(err);
         });
       }
 
       //Search for Airtable record
       function RetrieveID(base, tableName, recordPK) {
-        console.log("=====Retrieve record=====");
-        console.log(`★ tableName = ${tableName}`);
-        console.log(`★ recordPK = ${recordPK}`);
-        console.log(`base = ${base}`);
-        console.log(`★ filerformula = {ชื่อและวันที่}="${recordPK}"` );
+        // console.log("=====Retrieve record=====");
+        // console.log(`★ tableName = ${tableName}`);
+        // console.log(`★ recordPK = ${recordPK}`);
+        // console.log(`base = ${base}`);
+        // console.log(`★ filerformula = {ชื่อและวันที่}="${recordPK}"` );
 
         return new Promise((resolve, reject) => {
           if (recordPK) {
-            console.log(`case recordPK`);
+            // console.log(`case recordPK`);
             //find an existing Task recordID from AIRTABLE_BASE_ID
             base("บันทึกเวลาเข้าออก")
             .select({
@@ -1509,29 +1092,29 @@ app.post('/slack/events' , async(req, res) => {
               sort: [{field: "เวลาเข้างาน (First In)", direction: "desc"}]
             }).all()
             .then((records) => {
-              console.log(`★ case successful`);
-              console.log(records);
+              // console.log(`★ case successful`);
+              // console.log(records);
               if(records.length>0) {
                 records.forEach(item => {
-                  console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
-                  console.log(`★ The recordID is = ${item.id}`);
-                  console.log(item);
+                  // console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
+                  // console.log(`★ The recordID is = ${item.id}`);
+                  // console.log(item);
 
                   resolve(item.id);
                 });
               }
               else {
-                console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
+                // console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
                 recordID = "";
                 resolve(recordID);
               }
             });
           } else {
-            console.log("★ Nothing match your search");
+            // console.log("★ Nothing match your search");
             reject();
           }
         }).catch(err => {
-          console.log("★ Record not found, set recordID to empty.");
+          // console.log("★ Record not found, set recordID to empty.");
           recordID="";
         });
       }
@@ -1539,10 +1122,10 @@ app.post('/slack/events' , async(req, res) => {
 
       //Create new record
       function RecordCreate(base, tableName, dataGroup) {
-        console.log("=====Create new record=====");
+        // console.log("=====Create new record=====");
         //test OK!
-        console.log("★ dataGroup = ");
-        console.log(dataGroup);
+        // console.log("★ dataGroup = ");
+        // console.log(dataGroup);
 
         return new Promise((resolve, reject) => {
           let outputText = "";
@@ -1557,24 +1140,24 @@ app.post('/slack/events' , async(req, res) => {
                 allRecord = allRecord.concat(record);
                 outputText = `★ record ID ${record.id} from ${tableName} is CREATED!`;
               });
-              console.log("★ allRecord = ");
-              console.log(allRecord);
+              // console.log("★ allRecord = ");
+              // console.log(allRecord);
               resolve(outputText);
             });
           } else {
             reject();
           }
         }).catch(err => {
-          console.log(err);
+          // console.log(err);
         });
       }
 
       //Update extisting record
       function RecordUpdate(base, tableName, dataGroup) {
-        console.log("=====Update existing record=====");
+        // console.log("=====Update existing record=====");
         //test OK!
-        console.log("★ dataGroup = ");
-        console.log(JSON.stringify(dataGroup));
+        // console.log("★ dataGroup = ");
+        // console.log(JSON.stringify(dataGroup));
 
         return new Promise((resolve, reject) => {
           let text = "";
@@ -1596,7 +1179,7 @@ app.post('/slack/events' , async(req, res) => {
             reject();
           }
         }).catch(err => {
-          console.log(err);
+          // console.log(err);
         });
       }
 
@@ -1605,25 +1188,29 @@ app.post('/slack/events' , async(req, res) => {
       //===RUN===
 
       var baseID = "appAThxvZSRLzrXta"; //Jibble Datastore
-      console.log(`★ baseID = ${baseID}`);
+      // console.log(`★ baseID = ${baseID}`);
 
       var tableName = "บันทึกเวลาเข้าออก";
-      console.log(`★ tableName = ${tableName}`);
+      // console.log(`★ tableName = ${tableName}`);
 
       var recordID = await RetrieveID(baseDR, tableName, recordPK);
-      console.log(`★ recordID = ${recordID}`);
+      // console.log(`★ recordID = ${recordID}`);
 
       // Jibbled out the existing record
       if(recordID) {
-        console.log(`★ There is an existing record that hasn't Jibbled out yet, Jibble out this record`);
+        // console.log(`★ There is an existing record that hasn't Jibbled out yet, Jibble out this record`);
         let jibOutData = [{
           "id": recordID,
           "fields": {
             "เวลาออกงาน (Last Out)": dateTime
           }
         }];
-        let updateRecord = await RecordUpdate(baseDR, tableName, jibOutData);
-        console.log(updateRecord);
+        try {
+          let updateRecord = await RecordUpdate(baseDR, tableName, jibOutData);
+          // console.log(updateRecord); 
+        } catch (error) {
+          await fn.SendBUGmsg("updateRecord", "index.js", error)
+        }
       }
 
       // Check if it's Jibbled in or out
@@ -1631,18 +1218,19 @@ app.post('/slack/events' , async(req, res) => {
       if(event.text.includes("*jibbled in*")) {
         // create new record
         var dataGroup = await JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL);
-        console.log(`★ dataGroup =`);
-        console.log(dataGroup);
-        
-        var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
-        console.log(createRecord);
+        // console.log(`★ dataGroup =`);
+        // console.log(dataGroup);
+        try {
+          var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
+          // console.log(createRecord);
+        } catch (error) {
+          await fn.SendBUGmsg("createRecord", "index.js", error)
+        }
       }
 
 
     }
-    
   }
- 
   
   res.end();
 
@@ -1654,38 +1242,38 @@ app.post('/slack/events' , async(req, res) => {
 app.post('/slack/commands', async(req, res) => {
 
   //LOG ACTION REQUEST 
-      console.log("---------------/bolt COMMAND REQUEST STARTS HERE---------------");
-      console.log("----------req.body(string)----------");  
-      console.log(JSON.stringify(req.body)); 
-      console.log("---------------/bolt COMMAND REQUEST ENDS HERE---------------");       
+      // console.log("---------------/bolt COMMAND REQUEST STARTS HERE---------------");
+      // console.log("----------req.body(string)----------");  
+      // console.log(JSON.stringify(req.body)); 
+      // console.log("---------------/bolt COMMAND REQUEST ENDS HERE---------------");       
   //CHECK TEXT COMMAND & RETRIVE TRIGGER_ID
   const text = req.body.text;
-  console.log("★ Command text is: " + text);
+  // console.log("★ Command text is: " + text);
   const trigger_id = req.body.trigger_id;
-  console.log("★ trigger_id is: " + trigger_id);
+  // console.log("★ trigger_id is: " + trigger_id);
   const response_url = req.body.response_url;
-  console.log("★ responseURL is: " + response_url);
+  // console.log("★ responseURL is: " + response_url);
   const token = req.body.token;
-  console.log("★ Request token is: " + token);
+  // console.log("★ Request token is: " + token);
   const user_id = req.body.user_id;
-  console.log("★ user_id is: " + user_id);
+  // console.log("★ user_id is: " + user_id);
   const channel_id = req.body.channel_id
-  console.log("★ channel_id is: " + channel_id);
+  // console.log("★ channel_id is: " + channel_id);
   
   //if text contains 'mom' => send MOM message
   if (text.includes("mom") || text.includes("Mom") || text.includes("MOM") || text.includes("บันทึกการประชุม")) {
-    console.log("==SEND MOM MESSAGE==");
+    // console.log("==SEND MOM MESSAGE==");
     res.send(msg.momMsg());
   }
   //if text contains 'dr' => send DR message + create DR database cache document
   else if (text.includes("dr") || text.includes("DR") || text.includes("daily report") || text.includes("Daily Report") || text.includes("Daily report") || text.includes("DAILY REPORT")) {
-    console.log("==SEND DR MESSAGE==");
+    // console.log("==SEND DR MESSAGE==");
     res.sendStatus(204);
     
     msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
     .then(result => {
-      console.log(result.data);
-      // return console.log(`★ DR modal posted!`)
+      // console.log(result.data);
+      return console.log(`★ DR modal posted!`)
     })
     .catch(err => {
       console.error(err);
@@ -1731,21 +1319,21 @@ app.post('/slack/commands', async(req, res) => {
     };
 
     const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
-    console.log(DRcache);
+    // console.log(DRcache);
 
 
   }
 
   //if text contains 'rb' => send RB message + create RB database cache document
   else if (text.includes("rb") || text.includes("RB") || text.includes("requested budget") || text.includes("Requested Budget") || text.includes("Requested budget") || text.includes("REQUESTED BUDGET")) {
-    console.log("==SEND RB MESSAGE==");
+    // console.log("==SEND RB MESSAGE==");
     res.sendStatus(204);
     
 
     let postedModalResult = await msg.rbMsg(user_id, trigger_id)
     .then(result => {
-      console.log(`Modal posted result`);
-      console.log(JSON.stringify(result.data));
+      // console.log(`Modal posted result`);
+      // console.log(JSON.stringify(result.data));
       return result.data;
     })
     .catch(err => {
@@ -1799,13 +1387,13 @@ app.post('/slack/commands', async(req, res) => {
     };
 
     const RBcache = await fs.RBPrepopURLDocRef(user_id).set(RBJotUrl);
-    console.log(RBcache);
+    // console.log(RBcache);
 
   }
 
   //else => send help message
   else {
-    console.log("==SEND HELP MESSAGE==");
+    // console.log("==SEND HELP MESSAGE==");
     res.send(msg.helpMsg());
   }
   
@@ -1815,20 +1403,20 @@ app.post('/slack/commands', async(req, res) => {
 
 //=============================ACTION RESPONSE=============================
 app.post('/slack/actions', async(req, res) => {
-  console.log(JSON.parse(req.body.payload));
+  // console.log(JSON.parse(req.body.payload));
   //LOG ACTION REQUEST 
-      console.log("---------------ACTION REQUEST STARTS HERE---------------");
-      console.log("----------req.body----------");  
-      console.log(req.body); 
-      console.log("----------req.body(string)----------");  
-      console.log(JSON.stringify(req.body)); 
-      console.log("----------req.body.actions----------");   
-      console.log(req.body.actions);      
-      console.log("----------req.body.context----------");   
-      console.log(req.body.context);       
-      console.log("----------req.body.payload----------");   
-      console.log(req.body.payload);  
-      console.log("---------------ACTION REQUEST ENDS HERE---------------");     
+      // console.log("---------------ACTION REQUEST STARTS HERE---------------");
+      // console.log("----------req.body----------");  
+      // console.log(req.body); 
+      // console.log("----------req.body(string)----------");  
+      // console.log(JSON.stringify(req.body)); 
+      // console.log("----------req.body.actions----------");   
+      // console.log(req.body.actions);      
+      // console.log("----------req.body.context----------");   
+      // console.log(req.body.context);       
+      // console.log("----------req.body.payload----------");   
+      // console.log(req.body.payload);  
+      // console.log("---------------ACTION REQUEST ENDS HERE---------------");     
       
       const payload = JSON.parse(req.body.payload);
 
@@ -1843,18 +1431,18 @@ app.post('/slack/actions', async(req, res) => {
 
       const submissionValue = view? view.state.values : "";
       
-      console.log({ token, user, actions });
-      console.log(`★ viewName = ${viewName}`);
-      console.log(`★ trigger_id = ${trigger_id}`);
-      console.log("★ response_url = " + response_url);
-      console.log("★ block_id = " + block_id);
-      console.log("★ action_id = " + action_id);
-      console.log("★ user_id = "+ user_id); 
-      console.log(`★ channel_id = ${channel_id}`);
-      console.log(`★ submissionValue = ${JSON.stringify(submissionValue)}`);
-      console.log(`★ metadata = ${JSON.stringify(metadata)}`);
-      console.log(" ");
-      console.log(" ");
+      // console.log({ token, user, actions });
+      // console.log(`★ viewName = ${viewName}`);
+      // console.log(`★ trigger_id = ${trigger_id}`);
+      // console.log("★ response_url = " + response_url);
+      // console.log("★ block_id = " + block_id);
+      // console.log("★ action_id = " + action_id);
+      // console.log("★ user_id = "+ user_id); 
+      // console.log(`★ channel_id = ${channel_id}`);
+      // console.log(`★ submissionValue = ${JSON.stringify(submissionValue)}`);
+      // console.log(`★ metadata = ${JSON.stringify(metadata)}`);
+      // console.log(" ");
+      // console.log(" ");
   
 
   //-----DR DECLARE VARIABLE-----
@@ -1902,15 +1490,15 @@ app.post('/slack/actions', async(req, res) => {
               "misc.DRProjectQuery": ""
             };
 
-            console.log(actions[0].selected_option.value)
+            // console.log(actions[0].selected_option.value)
             let { ABB, ID } = JSON.parse(actions[0].selected_option.value);
 
             DRProjectQuery = ABB;
-            console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
+            // console.log(`★ DRProjectQuery = ${DRProjectQuery}`);
             DRProjectData["misc.DRProjectQuery"] = DRProjectQuery;
 
             DRProjectData.SE.SESlackID = user.id;
-            console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
+            // console.log(`★ SESlackID = ${DRProjectData.SE.SESlackID}`);
 
             // get PM's ID
             let projectData = await fn.DR_searchPPfrominfo(baseDR, "รายละเอียดโครงการ", `{ชื่อย่อโครงการ}="${DRProjectQuery}"`)
@@ -1920,7 +1508,7 @@ app.post('/slack/actions', async(req, res) => {
             }
             //find PM's info (firstname, lastname)
             let PMInfo = await fn.DR_getDataFromID(baseDR, "รายชื่อพนักงาน", PMRecordID);
-            console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
+            // console.log(`★ PMinfo = ${JSON.stringify(PMInfo)}`);
             //store data into object
             if(PMInfo) {
               DRProjectData.PM["PMName[first]"] = PMInfo["ชื่อ-สกุล"].split(" ")[0].trim()                                      
@@ -1934,12 +1522,12 @@ app.post('/slack/actions', async(req, res) => {
               DRProjectData.SE["SEName[last]"] = SEData["ชื่อ-สกุล"].split(" ")[1].trim()
             }
 
-            console.log("★ DRProjectData =");
-            console.log(JSON.stringify(DRProjectData));
+            // console.log("★ DRProjectData =");
+            // console.log(JSON.stringify(DRProjectData));
 
             //update to DB
             let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRProjectData);
-            console.log(DRcacheUpdate);
+            // console.log(DRcacheUpdate);
           }
           //User select date in DR input modal => 1.parse date information then 2.Update cache
           else if(action_id == "DR_date") {
@@ -1956,7 +1544,7 @@ app.post('/slack/actions', async(req, res) => {
 
             // res.sendStatus(204); //ack and end
             DRDateQuery = actions[0].selected_date
-            console.log(`★ DRDateQuery = ${DRDateQuery}`);
+            // console.log(`★ DRDateQuery = ${DRDateQuery}`);
             DRDateData["misc.DRDateQuery"] = DRDateQuery;
 
             //store data into object 
@@ -1964,33 +1552,33 @@ app.post('/slack/actions', async(req, res) => {
             DRDateData.day["input22[month]"] = DRDateQuery.split("-")[1].trim()
             DRDateData.day["input22[day]"] = DRDateQuery.split("-")[2].trim()
 
-            console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
-            console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
-            console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
+            // console.log(`★ input22[day] = ${DRDateData.day["input22[day]"]}`);
+            // console.log(`★ input22[month] = ${DRDateData.day["input22[month]"]}`);
+            // console.log(`★ input22[year] = ${DRDateData.day["input22[year]"]}`);
 
-            console.log("★ DRDateData =");
-            console.log(JSON.stringify(DRDateData));
+            // console.log("★ DRDateData =");
+            // console.log(JSON.stringify(DRDateData));
 
             //Update DB
             let DRcacheDateUpdate = await fs.DRPrepopURLDocRef(user_id).update(DRDateData);
-            console.log(DRcacheDateUpdate);
+            // console.log(DRcacheDateUpdate);
           }
         }
         //PM interacts in DR Approve Requested Message
         else if(block_id == "DR_approveAction") {
           //PM hit 'Approved' button => 1.send Jotform link for PM to sign and 2.delete approve requested message
           if(action_id == "DR_approve") {
-            console.log(`★ PM approved, redirect to Jotform Edit submission page`);
+            // console.log(`★ PM approved, redirect to Jotform Edit submission page`);
             //Direct to Edit submissionURL link
             res.sendStatus(204); //Ack()
 
             //Delete message
             let delmsg = msg.delMsg(response_url)
-            console.log(delmsg);
+            // console.log(delmsg);
           }
           //PM hit 'Reject' button => 1.pop up modal to PM to add comment  and 2.delete approve requested message
           else if(action_id == "DR_reject") {
-            console.log(`★ PM rejected, pop up modal to add comment & carry data to be update to DB over modal metadata`);
+            // console.log(`★ PM rejected, pop up modal to add comment & carry data to be update to DB over modal metadata`);
             res.status(200).write(""); // ack 
 
             //structure data for modal to be carry over
@@ -2001,12 +1589,12 @@ app.post('/slack/actions', async(req, res) => {
 
             //send Comment input modal to PM
             let postModalResult = await axios.post(`https://slack.com/api/views.open`, qs.stringify(msg.drRejectCommentMsg(trigger_id, process.env.SLACK_BOT_TOKEN, metadata)));
-            console.log(`★ Modal posted, here is a result =`);
-            console.log(postModalResult.data);
+            // console.log(`★ Modal posted, here is a result =`);
+            // console.log(postModalResult.data);
 
             //Delete message
             let delAppMsg = msg.delMsg(response_url)
-            console.log(delAppMsg);
+            // console.log(delAppMsg);
           }
         }
         
@@ -2018,7 +1606,7 @@ app.post('/slack/actions', async(req, res) => {
           //User select project
           if(block_id == "RB_inputModal-project") {
             res.sendStatus(204);
-            console.log(`★ RB project has been selected, update cache and RB modal`);
+            // console.log(`★ RB project has been selected, update cache and RB modal`);
 
             let { ABB, ID } = JSON.parse(actions[0].selected_option.value)
             //data layout to be updated in Firestore (ref:RBJotUrl)
@@ -2049,15 +1637,15 @@ app.post('/slack/actions', async(req, res) => {
             //get datas
             //Project data
             let projectData = await baseDR("รายละเอียดโครงการ").find(ID).then(record => {return record.fields});
-            console.log(`★ projectData`);          
-            console.log(projectData);
+            // console.log(`★ projectData`);          
+            // console.log(projectData);
             if(projectData) {
               data.AirtableData.MS400ID = projectData["MS400 baseID"];
             }
             //PMData
             let PMData = await baseDR("รายชื่อพนักงาน").find(projectData["ชื่อ PM (จากรายชื่อพนักงาน)"][0]).then(record => {return record.fields});
-            console.log(`★ PMData`);
-            console.log(PMData);
+            // console.log(`★ PMData`);
+            // console.log(PMData);
             if(PMData) {
               data.PM["PMName[first]"] = PMData["ชื่อ-สกุล"].split(" ")[0].trim();
               data.PM["PMName[last]"] = PMData["ชื่อ-สกุล"].split(" ")[1].trim();
@@ -2073,15 +1661,15 @@ app.post('/slack/actions', async(req, res) => {
             //sumRB
             let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(`${projectData["MS400 baseID"]}`)
             let RBData = await baseMS400("MS400").select({"view": "Requested Budgets", "fields":["ID", "Original BG Amount", "Ordered BG Amount"]}).all().then((records) => {return records.map((n) => {return n.fields})})
-            console.log(`★ RBData`);
-            console.log(RBData);
+            // console.log(`★ RBData`);
+            // console.log(RBData);
             if(RBData) {
               data.sumBudget.accOriginalBudget = RBData.reduce((sum, rec)=> {return {"Original BG Amount": sum["Original BG Amount"] + rec["Original BG Amount"]} })["Original BG Amount"]
               data.sumBudget.accOrderedBudget = RBData.reduce((sum, rec)=> {return {"Ordered BG Amount": sum["Ordered BG Amount"] + rec["Ordered BG Amount"]} })["Ordered BG Amount"]
             }
 
-            console.log(`★ summary of cache data to be updated`);
-            console.log(JSON.stringify(data));
+            // console.log(`★ summary of cache data to be updated`);
+            // console.log(JSON.stringify(data));
 
 
             //query and add `PR list` into msg
@@ -2096,8 +1684,8 @@ app.post('/slack/actions', async(req, res) => {
 
               return Object.keys(uniqueData);
             });
-            console.log(`★ PRData`);
-            console.log(PRData);
+            // console.log(`★ PRData`);
+            // console.log(PRData);
 
             //added into msg
             //structure data
@@ -2112,8 +1700,8 @@ app.post('/slack/actions', async(req, res) => {
                 "value": n
               }
             });
-            console.log(`layouted projects = `);
-            PRoptions.forEach(n => console.log(JSON.stringify(n)));
+            // console.log(`layouted projects = `);
+            // PRoptions.forEach(n => console.log(JSON.stringify(n)));
 
             let PRListSection = {
                 "type": "input",
@@ -2144,8 +1732,8 @@ app.post('/slack/actions', async(req, res) => {
 
             //add into msg blocks
             newModalView.blocks = [...newModalView.blocks, PRListSection];
-            console.log(`new modal view =`);
-            console.log(JSON.stringify(newModalView));
+            // console.log(`new modal view =`);
+            // console.log(JSON.stringify(newModalView));
 
 
 
@@ -2158,8 +1746,8 @@ app.post('/slack/actions', async(req, res) => {
               };
 
               let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
-              console.log('★ New modal view pushed!'); 
-              console.log(updateModalResult.data)             
+              // console.log('★ New modal view pushed!'); 
+              // console.log(updateModalResult.data)             
             } 
             catch (error) {
               console.error(error);
@@ -2167,12 +1755,12 @@ app.post('/slack/actions', async(req, res) => {
 
             //update cache (userID & Project abb)
             let RBcacheDateUpdate = await fs.RBPrepopURLDocRef(user_id).update(data);
-            console.log(RBcacheDateUpdate);
+            // console.log(RBcacheDateUpdate);
           }
           //User `select refDoc`
           else if(block_id == "RB_inputModal-PR") {
             res.sendStatus(204);
-            console.log(`★ RB refDoc has been selected, update cache`);
+            // console.log(`★ RB refDoc has been selected, update cache`);
 
             
             //data layout to be updated in Firestore (ref:RBJotUrl)
@@ -2197,8 +1785,8 @@ app.post('/slack/actions', async(req, res) => {
 
             //add into msg blocks
             newModalView.blocks = [...newModalView.blocks, data];
-            console.log(`new modal view =`);
-            console.log(JSON.stringify(newModalView));
+            // console.log(`new modal view =`);
+            // console.log(JSON.stringify(newModalView));
 
 
             //update modal
@@ -2210,8 +1798,8 @@ app.post('/slack/actions', async(req, res) => {
               };
               
               let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
-              console.log('★ New modal view pushed!'); 
-              console.log(updateModalResult.data)             
+              // console.log('★ New modal view pushed!'); 
+              // console.log(updateModalResult.data)             
             } 
             catch (error) {
               console.error(error);    
@@ -2220,7 +1808,7 @@ app.post('/slack/actions', async(req, res) => {
             //update cache
             //update cache (userID & Project abb)
             let RBcachePRUpdate = await fs.RBPrepopURLDocRef(user_id).update(PRdata);
-            console.log(RBcachePRUpdate);
+            // console.log(RBcachePRUpdate);
           }
         }
 
@@ -2233,10 +1821,10 @@ app.post('/slack/actions', async(req, res) => {
         res.status(200);
         res.write(""); //=ack();
         // code block
-        console.log("★ delete message case");
+        // console.log("★ delete message case");
         //res.status(200); //=ack();
         let result = await msg.delMsg(response_url);
-        console.log(result.data);
+        // console.log(result.data);
         res.end();
 
       }
@@ -2247,14 +1835,14 @@ app.post('/slack/actions', async(req, res) => {
       //User hit 'Open Daily Report' button in help messsage => send DR modal
       else if(action_id == "open_drMsg") {
         res.sendStatus(204);
-        console.log("★ open DR message case");
+        // console.log("★ open DR message case");
         // res.status(200); //=ack();
 
         //send DR message
         msg.drMsg(user_id, channel_id, trigger_id, process.env.SLACK_BOT_TOKEN)
         .then(result => {
-          console.log(result.data)
-          // return console.log("★ Modal posted");
+          // console.log(result.data)
+          return console.log("★ Modal posted");
         
         })
         .catch(err => {
@@ -2300,18 +1888,18 @@ app.post('/slack/actions', async(req, res) => {
           }
         };
         const DRcache = await fs.DRPrepopURLDocRef(user_id).set(DRJotUrl);
-        console.log(DRcache);
+        // console.log(DRcache);
 
       }
       //User hit 'Open Requested Budget' button in help messsage => send RB modal
       else if(action_id == "open_rbMsg") {
-        console.log("==SEND RB MESSAGE==");
+        // console.log("==SEND RB MESSAGE==");
         res.sendStatus(204);
         
         await msg.rbMsg(user_id, trigger_id)
         .then(result => {
-          console.log(result.data);
-          // return console.log(`★ RB modal posted!`)
+          // console.log(result.data);
+          return console.log(`★ RB modal posted!`)
         })
         .catch(err => {
           console.error(err);
@@ -2364,7 +1952,7 @@ app.post('/slack/actions', async(req, res) => {
         };
     
         const RBcache = await fs.RBPrepopURLDocRef(user_id).set(RBJotUrl);
-        console.log(RBcache);
+        // console.log(RBcache);
 
       }
     }
@@ -2375,7 +1963,7 @@ app.post('/slack/actions', async(req, res) => {
       //User hit 'Submit' button in DR input modal => 1.Verify project name & date, if "OK" then 2.Generate pre-populated Jotform URL 3.Push new view with prepopulated Jotform URL
       if(viewName == "DR_prepopInput") {
          
-        console.log("★ case DR_pre-populate URL");
+        // console.log("★ case DR_pre-populate URL");
         let today = new Date();
 
         //pop-up warning message if 'project' is not selected , OR 'date' is in the future
@@ -2384,15 +1972,15 @@ app.post('/slack/actions', async(req, res) => {
           let fields = documentSnapshot.data();
           return fields;
         })
-        console.log(`★ data from DB = `);
-        console.log(JSON.stringify(data));
+        // console.log(`★ data from DB = `);
+        // console.log(JSON.stringify(data));
         
         //2. check the date (if data.misc.DRDateQuery = "" => data.misc.DRDateQuery = date)
         var date = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
         let day = dateFormat(date, "yyyy-mm-dd");
         
         if(!data.misc.DRDateQuery) {
-          console.log(`★ There is no date from DB, assign date`);
+          // console.log(`★ There is no date from DB, assign date`);
           data.misc.DRDateQuery = day;
 
           //store data into object 
@@ -2400,9 +1988,9 @@ app.post('/slack/actions', async(req, res) => {
           data.day["input22[month]"] = day.split("-")[1].trim()
           data.day["input22[day]"] = day.split("-")[2].trim()
           
-          console.log(`★ input22[day] = ${data.day["input22[day]"]}`);
-          console.log(`★ input22[month] = ${data.day["input22[month]"]}`);
-          console.log(`★ input22[year] = ${data.day["input22[year]"]}`);
+          // console.log(`★ input22[day] = ${data.day["input22[day]"]}`);
+          // console.log(`★ input22[month] = ${data.day["input22[month]"]}`);
+          // console.log(`★ input22[year] = ${data.day["input22[year]"]}`);
           
         }
         
@@ -2412,15 +2000,15 @@ app.post('/slack/actions', async(req, res) => {
 
         //3. check, get other infos, save URL to Firestore cache, push new view with prepopulated Jotform URL
         if(!(data.misc.DRProjectQuery) || (new Date(data.misc.DRDateQuery)>today)) {
-          console.log("-----error case, no project chosen ,or date is in the future");
+          // console.log("-----error case, no project chosen ,or date is in the future");
           res.send(await msg.drErrorMsg(user_id, channel_id))
-          console.log('★ msg sent!');
+          // console.log('★ msg sent!');
         }
         else{
-          console.log("★ input checked! continue");
+          // console.log("★ input checked! continue");
 
           //NOT USED
-          console.log(`★ Clear modal view(s)`);
+          // console.log(`★ Clear modal view(s)`);
           // res.send({
           //   "response_action": "clear"
           // });
@@ -2431,28 +2019,28 @@ app.post('/slack/actions', async(req, res) => {
           if(staffAndDCData) {
             
             if(Object.keys(staffAndDCData.staff).length>0) {
-              console.log(`★ staffData from Airtable = ${JSON.stringify(staffAndDCData.staff)}`);
+              // console.log(`★ staffData from Airtable = ${JSON.stringify(staffAndDCData.staff)}`);
               data.staff = staffAndDCData.staff;
-              console.log(`★ Updated staff data`);
+              // console.log(`★ Updated staff data`);
             }
             else {
-              console.log("★ found no staff data = delete data.staff key");
+              // console.log("★ found no staff data = delete data.staff key");
               delete data.staff;
             }
             
             if(Object.keys(staffAndDCData.dc).length>0) {
-              console.log(`★ DCData from Airtable = ${JSON.stringify(staffAndDCData.dc)}`);
+              // console.log(`★ DCData from Airtable = ${JSON.stringify(staffAndDCData.dc)}`);
               data.dc = staffAndDCData.dc;
-              console.log(`★ DC data updated`);
+              // console.log(`★ DC data updated`);
             }
             else {
-              console.log("★ found no DC data = delete data.dc key");
+              // console.log("★ found no DC data = delete data.dc key");
               delete data.dc;
             }
             
           }
           else{
-            console.log(`★ No staff or DC data on this day, delete staff and dc keys`);
+            // console.log(`★ No staff or DC data on this day, delete staff and dc keys`);
             delete data.staff;
             delete data.dc;
           }
@@ -2460,61 +2048,61 @@ app.post('/slack/actions', async(req, res) => {
           //2.get progress100% (ยังไม่ทำเพราะ base เก็บข้อมูล DR ยังไม่มา)
           const progressData = undefined;
           if(progressData) {
-            console.log(`★ There are progress 100% from other DR`);
+            // console.log(`★ There are progress 100% from other DR`);
           }
           else {
-            console.log(`★ No progress100% this week, delete progress tree`);
+            // console.log(`★ No progress100% this week, delete progress tree`);
             delete data.progress100;
           }
           
           //delete unused data
           delete data.misc;
-          console.log(`★ finished data = ${JSON.stringify(data)}`)
+          // console.log(`★ finished data = ${JSON.stringify(data)}`)
           
           //transform and merge into URL
           const key = Object.keys(data)
-          console.log(`★ data keys = ${key}`);
+          // console.log(`★ data keys = ${key}`);
 
           //concat URL part from every keys except head
           var URLparam = [];
           for (var o in data) {
-            console.log(`★ data key = ${o}`);
+            // console.log(`★ data key = ${o}`);
             if(o != "head") {
               let entries = Object.entries(data[o]);
               entries = entries.map(n => n.join("=")).join("&");
-              console.log(entries);
+              // console.log(entries);
               URLparam = URLparam.concat(entries);
             }
             else {
-              console.log(`★ data keys = head, do nothing`);
+              // console.log(`★ data keys = head, do nothing`);
             }
           }
           URLparam = URLparam.join("&")
-          console.log(`★ Finished URLparam = ${URLparam}`);
+          // console.log(`★ Finished URLparam = ${URLparam}`);
 
           //merge URL
           URL = `${data.head}?${URLparam}`
-          console.log(`★ URL = ${URL}`);
+          // console.log(`★ URL = ${URL}`);
           
           //Shorten URL
           let URLshort = await TinyURL.shorten(URL); 
-          console.log(`★ URLshort = ${URLshort}`);
+          // console.log(`★ URLshort = ${URLshort}`);
           
           //save URL to Firestore cache
           let DRcacheUpdate = await fs.DRPrepopURLDocRef(user_id).update({"misc.DRPrepopulatedURL":URLshort});
-          console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
+          // console.log(`★ cache update result = ${JSON.stringify(DRcacheUpdate)}`);
 
 
 
           //Push new modal view that contains PrepopulatedURL
-          console.log(`★ drProject = ${drProject}`);
-          console.log(`★ drDate = ${drDate}`);
+          // console.log(`★ drProject = ${drProject}`);
+          // console.log(`★ drDate = ${drDate}`);
 
           // let pushURLviewResult = await axios.post(`https://slack.com/api/views.push`,msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
 
           try {
             res.send(await msg.drPrepopulatedURL(user_id, channel_id, drProject, drDate, URLshort));
-            console.log('★ New modal view pushed!');              
+            // console.log('★ New modal view pushed!');              
           } catch (error) {
             console.error(error);
           }
@@ -2522,7 +2110,7 @@ app.post('/slack/actions', async(req, res) => {
           /* NOT USED
           //Send URL message
           let responseURL = payload.response_urls[0].response_url;
-          console.log(`★ responseURL = ${responseURL}`);
+          // console.log(`★ responseURL = ${responseURL}`);
 
 
           try {
@@ -2531,10 +2119,10 @@ app.post('/slack/actions', async(req, res) => {
             let URLmessageResult = await axios.post( `${responseURL}` , msg.drPrepopMsg(drProject, drDate, URLshort) );
 
 
-            console.log(`★ URLmessageResult = ${JSON.stringify(URLmessageResult.data)}`);
-            console.log(`★ message posted`)
+            // console.log(`★ URLmessageResult = ${JSON.stringify(URLmessageResult.data)}`);
+            // console.log(`★ message posted`)
           } catch (error) {
-            console.log(error);
+            // console.log(error);
 
           }
           */
@@ -2544,21 +2132,21 @@ app.post('/slack/actions', async(req, res) => {
       //User hit 'Submit' button in RB input modal
       if(viewName == "RB_prepopInput") {
         // res.sendStatus(204);
-        console.log(`★ RB populate URL to submitted RB modal`);
+        // console.log(`★ RB populate URL to submitted RB modal`);
 
         
         //recall RB cache
-        console.log(`recall RB cache`);
+        // console.log(`recall RB cache`);
         let cache = await fs.RBPrepopURLDocRef(user_id).get().then(documentSnapshot => {
           let fields = documentSnapshot.data();
           return fields;
         })
-        console.log(`★ data from DB = `);
-        console.log(JSON.stringify(cache));
+        // console.log(`★ data from DB = `);
+        // console.log(JSON.stringify(cache));
 
         //send ERROR modal if project name and refDoc is empty
         if(!cache.misc.RBProjectQuery) {
-          console.log(`★ SEND PROJECT ERROR MODAL`);
+          // console.log(`★ SEND PROJECT ERROR MODAL`);
 
           res.send({
             "response_action": "errors",
@@ -2568,7 +2156,7 @@ app.post('/slack/actions', async(req, res) => {
           });
         }
         else if(!cache.misc.RBRefDocQuery) {
-          console.log(`★ SEND REFDOC ERROR MODAL`);
+          // console.log(`★ SEND REFDOC ERROR MODAL`);
 
           res.send({
             "response_action": "errors",
@@ -2579,20 +2167,20 @@ app.post('/slack/actions', async(req, res) => {
         }
         else {
           //get refDoc data
-          console.log(`★ get refDoc data`);
+          // console.log(`★ get refDoc data`);
           let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(`${metadata["MS400baseID"]}`)
           let PRData = await baseMS400("MS400").select({"view": "Purchase Requests", "filterByFormula": `{PR No}="${cache.misc.RBRefDocQuery}"`,"fields":["ID", "Details", "Linked Budget"]}).all().then((records) => {return records.map((n) => {return n.fields})}).catch((err) => console.error(err));
-          console.log(`★ PRData`);
-          console.log(PRData);
+          // console.log(`★ PRData`);
+          // console.log(PRData);
 
           //generate workName, description, resource if there are record(s)
-          console.log(`★ generate workName, description, resource if there are record(s)`);
+          // console.log(`★ generate workName, description, resource if there are record(s)`);
           if(PRData[0]) {
             //workName
             let workname = PRData.map((rec) => { return rec.Details})
             .reduce((arrayunique, val) => { val.trim(); return arrayunique.includes(val) ? arrayunique : [...arrayunique, val]}, []);  //[workName]
-            console.log(`★ workname`);
-            console.log(workname);
+            // console.log(`★ workname`);
+            // console.log(workname);
   
             cache.refDocument.workName = workname.join(", ");
 
@@ -2619,20 +2207,20 @@ app.post('/slack/actions', async(req, res) => {
                 }
               }).catch((err) => console.error(err));
 
-              console.log(data)
+              // console.log(data)
               linkedBudgetData = [...linkedBudgetData, data]
             }
 
-            console.log(`★ linkedBudgetData`);
-            console.log(linkedBudgetData);
-            console.log(JSON.stringify(linkedBudgetData));
+            // console.log(`★ linkedBudgetData`);
+            // console.log(linkedBudgetData);
+            // console.log(JSON.stringify(linkedBudgetData));
             
             //2.group unique (sum budget of every duplicate) & restructure
             let uniqueBudget = linkedBudgetData.reduce((unique, rec) => {
               let ID2 = `${rec["Budget_ID"]}-${rec["Unit"]}`;
               let keys = Object.keys(unique);
-              console.log(`ID2 = ${ID2}`);
-              console.log(`keys = ${keys}`);
+              // console.log(`ID2 = ${ID2}`);
+              // console.log(`keys = ${keys}`);
 
               if(keys.includes(ID2)) {
                 unique[ID2]["Q'ty"] = unique[ID2]["Q'ty"] + rec["Q'ty"];
@@ -2647,61 +2235,61 @@ app.post('/slack/actions', async(req, res) => {
               }
             }, {});
 
-            console.log(`★ uniqueBudget =`);
-            console.log(uniqueBudget);
-            console.log(JSON.stringify(uniqueBudget));
+            // console.log(`★ uniqueBudget =`);
+            // console.log(uniqueBudget);
+            // console.log(JSON.stringify(uniqueBudget));
 
 
             //3.restructure & update cache for description table
             let desFields = ["Area Code", "Group Element", "NRM Code", "Description", "Resource Code"];
             let desRow = 0;
             for(var k in uniqueBudget) {
-                console.log(`>>uniquebudget loop${desRow}: ${k}`)
+                // console.log(`>>uniquebudget loop${desRow}: ${k}`)
               for(var i in desFields) {
                 cache.description[`q54_description[${desRow}][${i}]`] = uniqueBudget[k][`${desFields[i]}`];
               }
               desRow = desRow + 1;
             }
 
-            console.log(`★ updated description table =`);
-            console.log(JSON.stringify(cache.description));
+            // console.log(`★ updated description table =`);
+            // console.log(JSON.stringify(cache.description));
 
 
             //4.compare data to uniqueResource{}
             let uniqueResource = Object.values(uniqueBudget).reduce((unique, n, i) => {
               //check resource code
               let resAndUnit = `${n["Resource Code"]}-${n["Unit"]}`;
-              console.log(`★ resAndUnit =`);
-              console.log(resAndUnit);
+              // console.log(`★ resAndUnit =`);
+              // console.log(resAndUnit);
 
               let keys = Object.keys(unique)
-              console.log(`★ unique keys =`);
-              console.log(keys);
+              // console.log(`★ unique keys =`);
+              // console.log(keys);
 
               //filter resource code
               let resourceMatched = keys.filter((key) => { return key.includes(n["Resource Code"]) })
-              console.log(`★ matched resource`);
-              console.log(resourceMatched);
+              // console.log(`★ matched resource`);
+              // console.log(resourceMatched);
               if(resourceMatched.length > 0) {
-                console.log(`★ resource matched => check for unit`);
+                // console.log(`★ resource matched => check for unit`);
                   //matched resource => check for unit
-                console.log(`★ Unit = " -${n["Unit"]} "`);
+                // console.log(`★ Unit = " -${n["Unit"]} "`);
 
 
                 if(resourceMatched.join(",").includes(`-${n["Unit"]}`)) { //resource and unit matched => update sum budget
-                  console.log(`★ resource and unit matched => update sum budget`);
+                  // console.log(`★ resource and unit matched => update sum budget`);
                   //sumbudget
                   unique[resAndUnit]["Q'ty"] = unique[resAndUnit]["Q'ty"] + n["Q'ty"];
                   unique[resAndUnit]["Budget Amount"] = unique[resAndUnit]["Budget Amount"] + n["Budget Amount"];
                   unique[resAndUnit]["Unit Rate"] = unique[resAndUnit]["Budget Amount"] / unique[resAndUnit]["Q'ty"];
                   unique[resAndUnit]["linkedDes"] = unique[resAndUnit]["linkedDes"].concat(`, 1.${i+1}`);
-                  console.log(`★ Updated unique`);
-                  console.log(unique);
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
 
                   return unique;
                 }
                 else { //resource matched but NOT unit => add unit remarks for that resource and add new row with unit remarks
-                  console.log(`★ resource matched but NOT unit => add unit remarks for that resource and add new row with unit remarks`);
+                  // console.log(`★ resource matched but NOT unit => add unit remarks for that resource and add new row with unit remarks`);
                   //add unit remarks in filtered resource
                   resourceMatched.map((key) => { return unique[key]["Remarks"] = `Unit = ${key.split("-")[1].trim()}` });
                   //add new data
@@ -2710,89 +2298,89 @@ app.post('/slack/actions', async(req, res) => {
 
                   unique[resAndUnit] = n;
 
-                  console.log(`★ Updated unique`);
-                  console.log(unique);
+                  // console.log(`★ Updated unique`);
+                  // console.log(unique);
 
                   return unique
                 }
               }
               else {  //NO matched resource => add new data
-                console.log(`★ NO matched resource => add new data`)
+                // console.log(`★ NO matched resource => add new data`)
                 n["linkedDes"] = `1.${i+1}`;
                 unique[resAndUnit] = n;
 
-                console.log(`★ Updated unique`);
-                console.log(unique);
+                // console.log(`★ Updated unique`);
+                // console.log(unique);
 
                 return unique
               }
             }, {});
 
-            console.log(`★ uniqueResource = `);
-            console.log(uniqueResource);
-            console.log(JSON.stringify(uniqueResource));
+            // console.log(`★ uniqueResource = `);
+            // console.log(uniqueResource);
+            // console.log(JSON.stringify(uniqueResource));
 
             //5.restructure & update cache for resource table
             let resFields = ["linkedDes", "Resource Name", "Q'ty", "Unit Rate", "Budget Amount", "Remarks"];
             desRow = 0;
             for(var k in uniqueResource) {
-                console.log(`>>uniqueResource loop${desRow}: ${k}`)
+                // console.log(`>>uniqueResource loop${desRow}: ${k}`)
               for(var i in resFields) {
                   cache.resource[`q28_resource[${desRow}][${i}]`] = uniqueResource[k][`${resFields[i]}`];
               }
               desRow = desRow + 1;
             }
 
-            console.log(`★ updated resource table =`);
-            console.log(JSON.stringify(cache.resource));
+            // console.log(`★ updated resource table =`);
+            // console.log(JSON.stringify(cache.resource));
 
           }
 
           //re-structure & form URL 
-          console.log(`★ re-structure & form URL`);
+          // console.log(`★ re-structure & form URL`);
 
-          console.log(`★ cache =`);
-          console.log(JSON.stringify(cache));
+          // console.log(`★ cache =`);
+          // console.log(JSON.stringify(cache));
 
 
             //delete unused data
           delete cache.misc;
-          console.log(`★ finished cache = ${JSON.stringify(cache)}`)
+          // console.log(`★ finished cache = ${JSON.stringify(cache)}`)
           
           //transform and merge into URL
           const key = Object.keys(cache)
-          console.log(`★ cache keys = ${key}`);
+          // console.log(`★ cache keys = ${key}`);
 
           //concat URL part from every keys except head
           var URLparam = [];
           for (var o in cache) {
-            console.log(`★ cache key = ${o}`);
+            // console.log(`★ cache key = ${o}`);
             if((o != "head") && (o != "AirtableData")) {
               let entries = Object.entries(cache[o]);
               entries = entries.map(n => n.join("=")).join("&");
-              console.log(entries);
+              // console.log(entries);
               URLparam = URLparam.concat(entries);
             }
             else {
-              console.log(`★ cache keys = head, do nothing`);
+              // console.log(`★ cache keys = head, do nothing`);
             }
           }
           URLparam = URLparam.join("&")
-          console.log(`★ Finished URLparam = ${URLparam}`);
+          // console.log(`★ Finished URLparam = ${URLparam}`);
 
           //merge URL
           URL = `${cache.head}?${URLparam}`
-          console.log(`★ URL = ${URL}`);
+          // console.log(`★ URL = ${URL}`);
           
           //Shorten URL
           let URLshort = await TinyURL.shorten(URL); 
-          console.log(`★ URLshort = ${URLshort}`);
+          // console.log(`★ URLshort = ${URLshort}`);
           
 
           //update modal
           try {
             res.send(await msg.rbPrepopulatedURL(cache.refDocument.refDoc.split("/")[0].trim(), cache.refDocument.refDoc, URLshort, cache.AirtableData.MS400ID));
-            console.log('★ New modal view pushed!');              
+            // console.log('★ New modal view pushed!');              
           } catch (error) {
             console.error(error);
           }
@@ -2807,7 +2395,7 @@ app.post('/slack/actions', async(req, res) => {
               "misc.RBPrepopulatedURL" : URLshort
             }
           );
-          console.log(`★ cache update result = ${JSON.stringify(cacheUpdate)}`);
+          // console.log(`★ cache update result = ${JSON.stringify(cacheUpdate)}`);
           
           /*
           //Update modal view (send URL)
@@ -2828,8 +2416,8 @@ app.post('/slack/actions', async(req, res) => {
             //delete `ข้อมูลครบแล้ว หก submit ได้เลยค่ะ` message
           newModalView.blocks.splice(4,1)
           newModalView.blocks = [...newModalView.blocks, ...newBlock];
-          console.log(`new modal view =`);
-          console.log(JSON.stringify(newModalView));
+          // console.log(`new modal view =`);
+          // console.log(JSON.stringify(newModalView));
   
   
           //update modal
@@ -2841,8 +2429,8 @@ app.post('/slack/actions', async(req, res) => {
             };
   
             let updateModalResult = await axios.post(`${apiUrl}/views.update`, qs.stringify(args));
-            console.log('★ New modal view pushed!'); 
-            console.log(updateModalResult.data)             
+            // console.log('★ New modal view pushed!'); 
+            // console.log(updateModalResult.data)             
           } 
           catch (error) {
             console.error(error);
@@ -2859,7 +2447,7 @@ app.post('/slack/actions', async(req, res) => {
           //User hit 'submit' button in reject comment modal => 1.update cache and 2.send reject message to SE
           if(submissionValue.DR_approveAction.DR_rejectComment.value) {
             res.sendStatus(204); //ack;
-            console.log(`★ Rejected comment received!, update DB & send message to submitter`);
+            // console.log(`★ Rejected comment received!, update DB & send message to submitter`);
    
             //update DB
             let DRno = metadata.DRno;
@@ -2871,24 +2459,24 @@ app.post('/slack/actions', async(req, res) => {
               "approveData.approveResult": "RE",
               "approveData.approveComment": payload.view.state.values.DR_approveAction.DR_rejectComment.value
             });
-            console.log(DRApproveResult);
+            // console.log(DRApproveResult);
    
             //send message to submitter 
               //1. get DB Data
-            console.log(`★ Get all this DR Data from DB to form a reject message`);
+            // console.log(`★ Get all this DR Data from DB to form a reject message`);
    
             let DRApproveData = await fs.DRListDocRef(project, DRno).get().then(documentSnapshot => {
               let fields = documentSnapshot.data();
               return fields;
             })
-            console.log(`★ data from DB = `);
-            console.log(JSON.stringify(DRApproveData)); 
+            // console.log(`★ data from DB = `);
+            // console.log(JSON.stringify(DRApproveData)); 
    
             //2. send Message
             let postResult = await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(msg.drRejectMsg(DRApproveData, DRApproveData.submitData.submitterSlackID, process.env.SLACK_BOT_TOKEN)))
    
-            console.log(`★ DM'ed to submitter, there is a result =\n `);
-            console.log(postResult.data);
+            // console.log(`★ DM'ed to submitter, there is a result =\n `);
+            // console.log(postResult.data);
             
           } 
         }
