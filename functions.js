@@ -4,16 +4,16 @@ const bodyParser = require('body-parser');
 const axios = require('axios'); 
 const qs = require('qs');
 const Airtable = require("airtable");
-const dateFormat = require("dateformat");
-const formidable = require("express-formidable");
+// const dateFormat = require("dateformat");
+// const formidable = require("express-formidable");
 
-const signature = require('./verifySignature');
-const appHome = require('./appHome');
-const msg = require('./msg');
-const modal = require('./modal');
-const test = require('./test');
-const fn = require('./functions');
-const fs = require('./firestore');
+// const signature = require('./verifySignature');
+// const appHome = require('./appHome');
+// const msg = require('./msg');
+// const modal = require('./modal');
+// const test = require('./test');
+// const fn = require('./functions');
+// const fs = require('./firestore');
 
 //apply middlewares
 const app = express();
@@ -54,8 +54,8 @@ function IsNotEmpty(value) {
 
 async function SendBUGmsg(functionName, fileName, error) {
   
-  let msg = `*ERROR from your server* \n>*- parameter/function name:* ${functionName} \n>*- filename:* ${fileName} \n>*- when:* ${now}\n>*- error log:* ${error}`
-
+  let msg = `*ERROR from your server* \n\n>*- parameter/function name:* ${functionName} \n\n>*- filename:* ${fileName} \n\n>*- error log:* ${error}`
+  
   let args = {
     "token" : process.env.SLACK_BOT_TOKEN,
     "channel": "C0108E7MGEN",
@@ -63,7 +63,56 @@ async function SendBUGmsg(functionName, fileName, error) {
   }
   
   return await axios.post('https://slack.com/api/chat.postMessage', qs.stringify(args));
+  
+}
 
+async function SendErrorMsg(channelId, docName, error, solution) {
+
+  //form msg
+  let msg = {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": ":scream: *ERROR!* เกิดข้อผิดพลาดบางอย่างขึ้นค่ะ"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*เอกสารที่ผิดพลาด:*  ${docName} \n\n *สิ่งที่ผิดพลาด:*  ${error} \n\n *แนวทางการแก้ไข:*  ${solution} \n\n\n รบกวนแก้ไขเพื่อให้สามารถดำเนินการต่อได้ ขอบคุณค่ะ :pray:`
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "context",
+        "elements": [
+          {
+            "type": "mrkdwn",
+            "text": "หากมีข้อสงสัยโปรดติดต่อ <@U010E15TBU0> ได้เลยนะคะ :blush:"
+          }
+        ]
+      }
+    ]
+  }
+
+
+  //wrap msg in args
+  let args = {
+    "token": process.env.SLACK_BOT_TOKEN,
+    "channel": channelId,
+    "text": `เกิดข้อผิดพลาดบางอย่างขึ้นในเอกสาร ${docName} ค่ะ`,
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+  
+  return await axios.post('https://slack.com/api/chat.postMessage', qs.stringify(args));
 }
 
 
@@ -160,8 +209,6 @@ function AT_listATRecordsWithFULLOBJOutput(base, table, data) {
     console.error(err);
   });
 };
-
-
 
 
 
@@ -428,9 +475,14 @@ function DR_getDCRecordsByFormula(base, tableName, filterFormula) {
   });
 };
 
+
+
+
+
+
 //=============================EXPORT FUNCTIONS=============================
 module.exports = {
-  IsNotEmpty, SendBUGmsg,
+  IsNotEmpty, SendBUGmsg, SendErrorMsg,
   AT_createRecordsWithRecIDOutput, AT_listATRecordsWithRecIDOutput, AT_listATRecordsWithFULLOBJOutput, 
   DR_searchPPfrominfo, DR_getDataFromID, DR_getMultipleRecordsByFormula, DR_getDCRecordsByFormula
 };

@@ -2,6 +2,7 @@ dependencies:
   airtable: 0.9.0
   axios: 0.19.2
   body-parser: 1.19.0
+  cors: 2.8.5
   dateformat: 3.0.3
   express: 4.17.1
   express-formidable: 1.2.0
@@ -438,6 +439,15 @@ packages:
     optional: true
     resolution:
       integrity: sha1-tf1UIgqivFq1eqtxQMlAdUUDwac=
+  /cors/2.8.5:
+    dependencies:
+      object-assign: 4.1.1
+      vary: 1.1.2
+    dev: false
+    engines:
+      node: '>= 0.10'
+    resolution:
+      integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==
   /cryptiles/0.2.2:
     dependencies:
       boom: 0.4.2
@@ -1216,6 +1226,12 @@ packages:
     dev: false
     resolution:
       integrity: sha1-y1QPk7srIqfVlBaRoojWDo6pOG4=
+  /object-assign/4.1.1:
+    dev: false
+    engines:
+      node: '>=0.10.0'
+    resolution:
+      integrity: sha1-IQmtx5ZYh8/AXLvUQsrIv7s2CGM=
   /on-finished/2.3.0:
     dependencies:
       ee-first: 1.1.1
@@ -1708,6 +1724,7 @@ specifiers:
   airtable: ^0.9.0
   axios: ^0.19.2
   body-parser: ^1.19.0
+  cors: ^2.8.5
   dateformat: ^3.0.3
   express: ^4.17.1
   express-formidable: ^1.2.0

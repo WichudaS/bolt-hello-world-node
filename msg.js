@@ -4,6 +4,7 @@ const dateFormat = require("dateformat");
 const qs = require('qs');
 const Airtable = require("airtable");
 const fs = require('./firestore');
+const TinyURL = require("tinyurl");
 
 const apiUrl = 'https://slack.com/api';
 const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXta");  //base "ข้อมูลสำหรับ Daily Report"
@@ -12,10 +13,10 @@ const baseDR = new Airtable(process.env.AIRTABLE_API_KEY).base("appAThxvZSRLzrXt
 //====================DECLARE VARIABLE TO BE USED IN THIS FILE======================
 
 var today = new Date(new Date().toLocaleString("en-AU", {timeZone: "Asia/Bangkok"}));
-console.log(today);
+// console.log(today);
 
 var initialDatepicker = dateFormat(today, "yyyy-mm-dd");
-console.log(`initialDatepicker = ${initialDatepicker}`);
+// console.log(`initialDatepicker = ${initialDatepicker}`);
 
 //=============================DECLARE obj 'MOM message'=============================
 const momMsg = () => {
@@ -1550,8 +1551,143 @@ const rbPrepopulatedURL = (project, refDoc, URL, MS400baseID) => {
   return arg;
 };
 
+//RB for slack warning (case = new code from RB Jotform input)
+const slackNewCodeWarningMsg = async (body) => {
+  let  { slackUserData, RBdata, budgetData } = body
+
+  console.log(`function: slackNewCodeWarningMsg`);
+
+  let JotformHead = "https://form.jotform.com/210172424066446";
+  
+  let i = RBdata.name.indexOf("-");
+  let RBno = RBdata.name.slice(0, i)
+  let RBname = RBdata.name.slice(i+1, RBdata.name.length)
+
+  //get body message and codelist
+  let text1 = ["*ข้อมูล Code ใหม่ที่ต้องตรวจสอบ*\n   format ของ code ที่แสดง:\n```Area Code-Group Element-NRM Code-Description-Resource Code-Resource Name (Unit)```\n"];
+
+  let codeLayouted = budgetData.map((o, i) => {
+    return `${i+1}. \`${o["code"]["Area Code"]}\`-\`${o["code"]["Group Element"]}\`-\`${o["code"]["NRM Code"]}\`-\`${o["code"]["Description"]}\`-\`${o["code"]["Resource Code"]}\`-\`${o["code"]["Resource Name"]}\` (\`${o["code"]["Unit"]}\`)`
+  });
+
+  // console.log(codeLayouted)
+
+  text1 = [...text1, ...codeLayouted]
+  // console.log(text1)
+
+    //join all array with "\n   "
+  let combinedText = text1.join("\n   ");
+
+  // console.log(combinedText);
+
+  //Pre-populated Jotform URL
+  let msgURL = {
+    "RBno": RBno,
+    "RBresourceName": RBname,
+    "RBrecordURL": RBdata.url,
+    "requestPayload": JSON.stringify(body),
+  }
+
+  budgetData.map((o, i) => {
+    // console.log(o);
+    let dupRec = o.conflictedRecordURL.map((url) => {
+      let id = url.slice(url.lastIndexOf("/")+1, url.length);
+      // console.log([id, url]);
+      return [id, url];
+    });
+    let l = i+1;
+    msgURL[`c${l}AC`] = o.code["Area Code"];
+    msgURL[`c${l}GE`] = o.code["Group Element"];
+    msgURL[`c${l}NRM`] = o.code["NRM Code"];
+    msgURL[`c${l}Desc`] = o.code.Description;
+    msgURL[`c${l}RC`] = o.code["Resource Code"];
+    msgURL[`c${l}RN`] = o.code["Resource Name"];
+    msgURL[`c${l}UN`] = o.code.Unit;
+    msgURL[`c${l}MS400Result`] = o.result;
+    msgURL[`c${l}ExistingBudget`] = dupRec;
+    msgURL[`c${l}NewAC`] = o.code["Area Code"];
+    msgURL[`c${l}NewGE`] = o.code["Group Element"];
+    msgURL[`c${l}NewNRM`] = o.code["NRM Code"];
+    msgURL[`c${l}NewDesc`] = o.code.Description;
+    msgURL[`c${l}NewRC`] = o.code["Resource Code"];
+    msgURL[`c${l}NewRN`] = o.code["Resource Name"];
+    msgURL[`c${l}NewUN`] = o.code.Unit;
+    msgURL[`c${l}NewUR`] = 0;
+    msgURL[`c${l}NewBGamount`] = 0;
+  });
+  
+  // console.log(msgURL);
+  
+  let queryString = qs.stringify(msgURL, { encodeValuesOnly: true } );
+  
+  // console.log(queryString);
+
+  let URL =  await TinyURL.shorten(`${JotformHead}?${queryString}`);
+  
+  console.log(`prepopulated Jotform URL = ${URL}`);
 
 
+  //form msg
+  let msg = {
+    "blocks": [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "รบกวนตรวจสอบและดำเนินการ code ใหม่ ใน Requested Budget ด้วยค่ะ :pray:"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `*ข้อมูล RB*\n   •  RB เลขที่:  \`${RBno}\` \n   •  ชื่อ resource บรรทัดที่มีการเพิ่ม code:  \`${RBname}\` \n   •  RB record URL:  \`<${RBdata.url}>\``
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": combinedText
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "actions",
+        "elements": [
+          {
+            "type": "button",
+            "text": {
+              "type": "plain_text",
+              "text": "ตรวจสอบ Code และดำเนินการต่อ",
+              "emoji": true
+            },
+            "style": "primary",
+            "url": URL,
+            "action_id": "Jotform link clicked"
+          }
+        ]
+      }
+    ]
+  };
+
+  //wrap msg in args
+  let args = {
+    "token": process.env.SLACK_BOT_TOKEN,
+    "channel": slackUserData.id,
+    "text": `รบกวนตรวจสอบ code ใหม่จาก ${RBdata.name}`,
+    "blocks": JSON.stringify(msg["blocks"])
+  };
+
+  //return
+  return args;
+  
+};
 
 
 
@@ -1723,5 +1859,5 @@ function sendEphemeralMsg(user_id, channel_id, msg, SLACK_BOT_TOKEN) {
 module.exports = { 
   helpMsg, delMsg, updateMsg, momMsg, sendEphemeralMsg, 
   drMsg, drErrorMsg, drPrepopulatedURL, drPrepopMsg, drApproveMsg, drPublishedMsg, drCommentMsg, drFileUpdateMsg, drRejectCommentMsg , drRejectMsg, 
-  rbMsg, rbPrepopulatedURL};
+  rbMsg, rbPrepopulatedURL, slackNewCodeWarningMsg};
 
