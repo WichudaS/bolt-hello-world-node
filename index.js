@@ -20,23 +20,22 @@ const axios = require('axios');
 const qs = require('qs');
 const Airtable = require("airtable");
 const dateFormat = require("dateformat");
-const formidable = require("express-formidable");
+// const formidable = require("express-formidable");
 const TinyURL = require("tinyurl");
 // const admin = require('firebase-admin');
-
+const cors = require('cors');
 
 
 
 //import module from other .JS files
 // const serviceAccount = require('./bolt-hello-world-node-3ee5bea630af.json');
 const signature = require('./verifySignature');
-const appHome = require('./appHome');
+// const appHome = require('./appHome');
 const msg = require('./msg');
-const modal = require('./modal');
-const test = require('./test');
+// const modal = require('./modal');
+// const test = require('./test');
 const fn = require('./functions');
 const fs = require('./firestore');
-const dr = require('./dr');
 
 //firebase initializing
 // admin.initializeApp({
@@ -74,6 +73,7 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
   }
 };
 
+app.use(cors());
 app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
 app.use(bodyParser.json({ verify: rawBodyBuffer }));
 // app.use(formidable({
@@ -98,78 +98,77 @@ var today = dateFormat(now, "yyyy-mm-dd");
 //===========================Test with get on index route===========================
 app.get("/", async function(req, res) {
   // console.log(`RUN test...`);
-
   res.send(`Hi!, server is running...`);
-
-
-
 });
 
 
 //=============================Jotform webhooks====================================
 app.post('/jotform/hooks' , async function(req, res) {
-  // console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
+  console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
   res.status(200).send("OK");// ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
-
+  
   //================= Parse JotForm request to JSON ===============================
-
+  
   
   const body = JSON.stringify(req.body);
   // console.log(`★ req.body is = \n ${body}`);
   
   const raw = req.body.rawRequest;
   // console.log(`★ raw is = \n ${raw}`);
-
+  
   // JSON.parse เลยจะอ่านไม่ออก ต้อง stringify ก่อนเสมอ
   const rawreq = JSON.stringify(req.body.rawRequest);
   // console.log(`\n\n\n ★ raw req is = \n ${rawreq}`);
-
+  
   const formID = req.body.formID;
   // console.log(`★ formID is = \n ${formID}`);
-
+  
   const formTitle = req.body.formTitle;
   // console.log(`★ formTitle = ${formTitle}`);
-
+  
   const submissionID = req.body.submissionID;
   // console.log(`★ submissionID = ${submissionID}`);
-
+  
   //-----------------------for testing (Delete this part when done)---------------------------------
-
-//   const raw = test.DRJotPayload;
-//   const formID = "201670438940455";
-//   const formTitle = "Daily Report" ;
-//   const submissionID = "4724235956026385529";
+  
+  //   const raw = test.DRJotPayload;
+  //   const formID = "201670438940455";
+  //   const formTitle = "Daily Report" ;
+  //   const submissionID = "4724235956026385529";
   
   //------------------------------------------------------------------------------------------------
-
-  // console.log(`★ formID is = \n ${formID}`);
-  // console.log(`★ formTitle = ${formTitle}`);
-  // console.log(`★ submissionID = ${submissionID}`);
-
-
+  
+  console.log(`★ formID is = \n ${formID}`);
+  console.log(`★ formTitle = ${formTitle}`);
+  console.log(`★ submissionID = ${submissionID}`);
+  
+  
   var parsed = JSON.parse(raw);
-  // console.log(`★ parsed = \n ${parsed}`);
-
+  console.log(`★ parsed = \n`);
+  console.log(JSON.stringify(parsed));
+  
   var key = Object.keys(parsed);
-  // console.log(`★ parsed key = \n ${key}`);
-
-  // console.log(`★ keylength = ${key.length}`);
-
+  console.log(`★ parsed key = \n ${key}`);
+  
+  console.log(`★ keylength = ${key.length}`);
+  
   for (var i = 0; i < key.length; i++) {
     var k = key[i];
-
-    // console.log(`★ ${i+1}.${k} = `);
-    // console.log(parsed[k]);
+    
+    console.log(`★ ${i+1}.${k} = `);
+    console.log(parsed[k]);
   }
   
-
+  console.log("=================JOTFORM WEBHOOKS RECEIVED END===================");
+  
+  
 
   if(formTitle == "Daily Report") {
     let DRno = parsed["q116_uniqueId"].split("_")  //change string into array
     DRno.splice(0, 1, parsed["q98_input98"])   // delete XXX, insert project ABB.
     DRno = DRno.join("_")   //join array back into string
     // console.log(`★ DRno = ${DRno}`);
-
+    
     if (!parsed["q176_signature176"]) {  //IF there is no PM sign or PMcomment => request approve, if filled SAVE to GGD and published to channel 
       // console.log(`★ case send DR approve message in Slack, and save the data to Firestore`);
       
@@ -556,10 +555,10 @@ app.post('/jotform/hooks' , async function(req, res) {
     }
   }
   else if(formTitle == "Requested budget") {
-    // console.log(`★ RB Jotform submitted => 1. set data layout, 2. pull DocStatus from Firestore, 3.update Firestore, 4. Update Airtable`);
+    console.log(`★ RB Jotform submitted => 1. set data layout, 2. pull DocStatus from Firestore, 3.update Firestore, 4. Update Airtable`);
 
     let RBno = `${parsed["q15_projectAbb"]}_RB_${parsed["q4_runningNo"]}`;
-    // console.log(`★ RBno = ${RBno}`);
+    console.log(`★ RBno = ${RBno}`);
 
     //set data layout
     //create firestore document status [initial data]
@@ -568,8 +567,8 @@ app.post('/jotform/hooks' , async function(req, res) {
       "submissionID": submissionID,
       "number": RBno,
       "name": `${parsed["q15_projectAbb"]}-RB-${parsed["q6_date"]["year"]}${parsed["q6_date"]["month"]}${parsed["q6_date"]["day"]}`,
-      "date": `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["year"]}`,
-      "status": "รออนุมัติ",
+      "date": `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["day"]}`,
+      "status": "รอ PM อนุมัติ",
       "docType": "RB (Requested Budget)",
       "project": parsed["q15_projectAbb"],
       "pdfLink": `https://www.jotform.com/server.php?action=getSubmissionPDF&sid=${submissionID}&formID=${formID}`,
@@ -593,20 +592,81 @@ app.post('/jotform/hooks' , async function(req, res) {
       "GGDFolder": parsed["q136_GGDFolder"],
       "fileUpdated": false
     }
-    // console.log(`RBStatusDB = ${JSON.stringify(RBStatusDB)}`);
-
+    
     //Airtable data [initial data]
     //RB summary
     let RBsummary = {
       "RB No": RBno,     //"HO9_RB_002"    
-      "วันที่":  `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["year"]}`,     //"2020-12-08"
+      "วันที่":  `${parsed["q6_date"]["year"]}-${parsed["q6_date"]["month"]}-${parsed["q6_date"]["day"]}`,     //"2020-12-08"
       "Revision": parsed["q132_Revision"],       //  "00"
       "Project":  parsed["q15_projectAbb"],       //  "HO9"
       "รายละเอียดการขออนุมัติ": parsed["q131_input131"],        //  "Gutter Stainless Steel 1.2 mm."       // ["recc4g3qmqfzGXpZi"],         
-      "Status":  "Waiting for approve",     //  ใช้สถานะนี้เริ่มต้นเสมอ
+      "Status":  "รอ PM อนุมัติ",     //  ใช้สถานะนี้เริ่มต้นเสมอ
       "เอกสารอ้างอิง": parsed["q63_refDoc"],        //"HO9/PR/002"
-      "เหตุผลในการร้องขอ RB": parsed["q61_Rbreason"],           //  "มีงานเพิ่มนอกเหนือจากการทำงานครั้งแรก เพิ่ม overflow\n"
+      "เหตุผลในการร้องขอ RB": parsed["q61_RBreason"],           //  "มีงานเพิ่มนอกเหนือจากการทำงานครั้งแรก เพิ่ม overflow\n"
     }
+    
+    
+    //check document status based on signatures
+    //PM signature
+    if(parsed["q88_Project88"]) {
+      RBStatusDB.PMapproveData = {
+        "approverSlackID": parsed["q122_PMSlackID"],
+        "approveDate": `${parsed["q87_PMDate"]["year"]}-${parsed["q87_PMDate"]["month"]}-${parsed["q87_PMDate"]["day"]}`,
+        "approveResult": parsed["q140_PMcomment"] ? "AN" : "AP",
+        "approveComment": parsed["q140_PMcomment"] ? parsed["q140_PMcomment"] : ""
+      };
+      RBStatusDB.status = "รอผู้บริหารอนุมัติ";
+
+      RBsummary.Status = "รอผู้บริหารอนุมัติ";
+    }
+
+    //Board signature
+    if(parsed["q85_input85"] || parsed["q102_input102"] || parsed["q105_input105"] || parsed["q108_input108"]) {
+      if(parsed["q85_input85"]) {  //CNK
+        RBStatusDB.boardApproveData = {
+          "approverSlackID": parsed["q124_CNKSlackID"],
+          "approveDate": `${parsed["q84_CNKdate"]["year"]}-${parsed["q84_CNKdate"]["month"]}-${parsed["q84_CNKdate"]["day"]}`,
+          "approveResult": parsed["q141_CNKcomment"] ? "AN" : "AP",
+          "approveComment": parsed["q141_CNKcomment"]
+        }
+      } 
+      else if(parsed["q102_input102"]) {  //VSL
+        RBStatusDB.boardApproveData = {
+          "approverSlackID": parsed["q126_VSLSlackID"],
+          "approveDate": `${parsed["q103_VSLdate"]["year"]}-${parsed["q103_VSLdate"]["month"]}-${parsed["q103_VSLdate"]["day"]}`,
+          "approveResult": parsed["q142_VSLcomment"] ? "AN" : "AP",
+          "approveComment": parsed["q142_VSLcomment"]
+        }
+      }
+      else if(parsed["q105_input105"]) {  //NPB
+        RBStatusDB.boardApproveData = {
+          "approverSlackID": parsed["q127_NPBSlackID"],
+          "approveDate": `${parsed["q106_NPBdate"]["year"]}-${parsed["q106_NPBdate"]["month"]}-${parsed["q106_NPBdate"]["day"]}`,
+          "approveResult": parsed["q143_NPBcomment"] ? "AN" : "AP",
+          "approveComment": parsed["q143_NPBcomment"]
+        }
+      }
+      else {  //TPS
+        RBStatusDB.boardApproveData = {
+          "approverSlackID": parsed["q128_TPSSlackID"],
+          "approveDate": `${parsed["q109_TPSdate"]["year"]}-${parsed["q109_TPSdate"]["month"]}-${parsed["q109_TPSdate"]["day"]}`,
+          "approveResult": parsed["q144_TPScomment"] ? "AN" : "AP",
+          "approveComment": parsed["q144_TPScomment"]
+        }
+      }
+
+      RBStatusDB.status = "อนุมัติแล้ว";
+
+      RBsummary.Status = "อนุมัติแล้ว";
+    }
+    
+    
+    console.log(`RBStatusDB = ${JSON.stringify(RBStatusDB)}`);
+
+
+
+
 
     //RB details
     //layouting every resource row that is not empty
@@ -637,55 +697,225 @@ app.post('/jotform/hooks' , async function(req, res) {
     let RBstatus = await fs.db.collection(`/project/${parsed["q15_projectAbb"]}/documentStatus/RB/RBList`).where("number", "==", RBno).limit(1).get()
     .then((Snapshot) => {
       if(Snapshot.empty) {
-        // console.log(`★ no document matches your search`);
+        console.log(`★ no document matches your search`);
         return ;
       }
       let result = [];
       Snapshot.forEach((doc) => { result = [...result, doc.data()] } );
       return result;   //[]?
     });    // return undefined or []
+    
+    console.log(`★ RBstatus = ${JSON.stringify(RBstatus)}`)
+    
 
-    // console.log(`★ RBstatus = ${JSON.stringify(RBstatus)}`)
+    //create FS doc or Update entire doc (same function)
+    try {
+      let FScreatedResult = await fs.RBListDocRef(RBStatusDB.project, RBStatusDB.number).set(RBStatusDB);
+      console.log(`★ save to DB completed!, here is the result...`);
+      console.log(FScreatedResult);
+    } 
+    catch (error) {
+      await fn.SendBUGmsg("FScreatedResult", "index.js", error)
+    }
 
-    if(!RBstatus) {    //no existing RBno => create new records
-      //create FS doc 'w/o changing template data'
+
+    //set Airtable API endpoint for base MS400
+    let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(parsed["q138_MS400"])
+    
+    //query RBsummary
+    let RBsummaryQuery = await baseMS400("Requested Budget Summary").select({
+      view: "SERVER-RB summary for query", 
+      fields: ["Name"],
+      filterByFormula: `{RB No}='${RBno}'`,
+      maxRecords: 1
+    })
+    .all()
+    .then((records) => {
+      let chunks = records.map((n) => { return n.id });
+      return chunks;
+    })
+    .catch( async error => {
+      await fn.SendBUGmsg("RBsummaryQuery", "index.js", error)
+    })
+
+    console.log(`★ RBsummary query = ${RBsummaryQuery}`);
+
+    if(RBsummaryQuery.length == 0) {  //no existing record => create new record
+      console.log(`★ No matched RBsummary record in Airtable`)
       try {
-        let FScreatedResult = await fs.RBListDocRef(RBstatus.project, RBstatus.number).set(RBStatusDB);
-        // console.log(`★ save to DB completed!, here is the result...`);
-        // console.log(FScreatedResult);
-      } 
-      catch (error) {
-        await fn.SendBUGmsg("FScreatedResult", "index.js", error)
+        await baseMS400("Requested Budget Summary").create(RBsummary, {typecast: true})
+        .then(record => { return record.id});
+      } catch (error) {
+        await fn.SendBUGmsg("RBsummaryCreated", "index.js", error)
       }
+    }
+    else { //some existing record => udpate record
+      try {
+        //add id into RBsummary payload
+        let addedData = 
+        await baseMS400("Requested Budget Summary").replace(RBsummaryQuery[0],RBsummary, {typecast: true})
+        .then(record => { return record.id});
+      } catch (error) {
+        await fn.SendBUGmsg("RBsummaryUpdated", "index.js", error)
+      }
+    }
+
+    //query RBdetails
+    let RBdetailsQuery = await baseMS400("MS400").select({
+      view: "SERVER-RBdetails for Query", 
+      fields: ["ID"],
+      filterByFormula: `{RB No}='${RBno}'`,
+      maxRecords: 20
+    })
+    .all()
+    .then((records) => {
+      let chunks = records.map((n) => { return n.id });
+      return chunks;
+    })
+
+    if(RBdetailsQuery.length == 0) {  //if there are ones => delete before create new ones
+      console.log(`★ There are some existing records that matched this RBno`);
+      for(var i=0 ; i<RBdetailsQuery.length ; i=i+10) {
+        let chunk = RBdetailsQuery.slice(i,i+10);
+        try {
+          await baseMS400("MS400").destroy(chunk)
+        } catch (error) {
+          await fn.SendBUGmsg("RBdetailsDeleted", "index.js", error)
+        }
+      }
+    }
+
+    //create new record(s)
+    try {
+      await baseMS400("MS400").create(RBdetails, {typecast: true})
+    } catch (error) {
+      await fn.SendBUGmsg("RBdetailsCreated", "index.js", error)
+    }
+  }
+  else if(formTitle == "Requested budget_New code verification") {
+    console.log(`★ New code verfied form RB => 1.grouping, 2.create new record (if any), 3.weight RB, 4.update data in all budgets, 5.send Slack result message`);
+
+    //group code choices (use existing budgets or create new budget?)
+    let { slackUserData, RBdata, budgetData } = JSON.parse(parsed.q209_requestPayload);
+    let RBindex = RBdata.name.indexOf("-");
+    let RBno = RBdata.name.slice(0, RBindex)
+    let RBname = RBdata.name.slice(RBindex+1, RBdata.name.length)
+
+    let toBeCreatedBudget = [];
+    let toBeWeightedBudget = [];
+      //count all code result (count by filtering `c1Choice` or `q285_c1ChoiceNoMS400`) 
+    let codeResult = key.reduce((total, k) => {
+      if(k.includes("Choice") && parsed[k]) {
+        let codeNo = k.split("_c")[1][0];
+
+        if(parsed[k].includes("ลง budget ที่มีอยู่เดิม")) {
+          //excract code no.
+          return total.existingBudget = [...total.existingBudget, codeNo];
+        }
+        else {    //newBudget
+          return total.newBudget = [...total.newBudget, codeNo];
+        }
+      }
+      else {
+        return total;
+      }
+    }, { "existingBudget": [], "newBudget": [] });   
+    
+    // codeResult template= { 
+    //   "existingBudget": [1,2],
+    //   "newBudget": [3]
+    // }
+    
+    //check: no modified recordID? or new recordID?
+    let allExistingRec = JSON.parse(parsed.q209_requestPayload).budgetData.reduce((total, n) => {
+      if(n.conflictedRecordURL.length > 0) {
+        let recIDs = n.conflictedRecordURL.map((url) => {
+          return url.slice(url.lastIndexOf("/")+1, url.length)
+        });
+        return total = [...total, ...recIDs]
+      }
+      else {
+        return total
+      }
+    }, []);
+
+    let allSubmittedRec = key.reduce((total, k) => {
+      if(k.includes("ExistingBudget")) {
+        let ids = parsed[k].reduce((total2, arr) => {
+          if(arr.length == 3) {
+            return total2 = [...total2, arr[0]]
+          }
+          else {
+            return total2;
+          }
+        }, [])
+        return total = [...total, ...ids];
+      }
+      else {
+        return total;
+      }
+    }, []);
+
+    let modifiedRecID = allSubmittedRec.reduce((result, id) => {
+      if(!allExistingRec.includes(id)) {
+        return result = "Yes";
+      }
+      else {
+        return result;
+      }
+    }, "No");
+
+    if(modifiedRecID == "Yes") {
+      console.log(`★ Some submitted RecordID from Jotform has been modified, send Error message to User to re-submit Jotform again`)
+      //send Error Msg to user to resubmit Jotform
+      let docName = `\n> Jotform submission form:  ${formTitle} \n> Submission ID:  ${submissionID} \n> RB no.:  ${RBno} \n> resource name ชื่อ:  ${RBname}`;
+      let error = `มีการแก้ไขค่า recordID ในเอกสาร ทำให้ข้อมูลผิดพลาด`;
+      let solution = `\n> 1.กดปุ่ม "ตรวจสอบ Code และดำเนินการต่อ" ในข้อความแจ้งเตือนด้านล่างข้อความนี้ \n> 2.submit เอกสารใหม่อีกครั้ง *ไดยไม่แก้ไข recordID เอกสาร* \n\n _หากการแจ้งเตือนนี้ไม่สมเหตุสมผล รบกวนติดต่อผู้พัฒนาตาม Note ด้านล่าง_`;
+
+      await fn.SendErrorMsg(JSON.parse(parsed.q209_requestPayload).slackUserData.id, docName, error, solution)
+      .then((response) => {
+        console.log('message sent!');
+        console.log(`response.data =`);
+        console.log(response.data);
+      })
+      .catch(async (err) => {
+        console.error(err);
+        console.log(`can't send message, send ERROR message to BUG channel instead`);
+        await fn.SendBUGmsg("fn.SendErrorMsg", "functions.js", err)
+      })
+
+      //send slack warning message *again*
+      await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(await msg.slackNewCodeWarningMsg(JSON.parse(parsed.q209_requestPayload))))
+      .then((response) => {
+        console.log('message sent!');
+        console.log(`response.data =`);
+        console.log(response.data);
+      })
+      .catch(async (err) => {
+        console.error(err);
+        console.log(`can't send message, send ERROR message to BUG channel instead`);
+        await fn.SendBUGmsg("msg.slackNewCodeWarningMsg", "index.js", err)
+      })
+    }
+    //if no modified recordID => continue...
+    else {
+      //1. create new budget
+      //1.1 create new records
+      if(codeResult.newBudget.length > 0) {
+        
+      }
+      //1.2 add into stack => waiting to be  weighting RB
+      //2. use existing budget
+        //2.1 add into stack => waiting to be  weighting RB
       
-      //create AT records
-      let baseMS400 = new Airtable(process.env.AIRTABLE_API_KEY).base(parsed["q138_MS400"])
-      //RB summary
-      try {
-        let RBsummaryResult = await baseMS400("Requested Budget Summary").create(RBsummary)
-        // console.log(`★ RB summary created, here is the result...`);
-        // console.log(RBsummaryResult);
-      } catch (error) {
-        await fn.SendBUGmsg("RBsummaryResult", "index.js", error)
-      }
-      //RB details
-      try {
-        let RBdetailsResult = await baseMS400("MS400").create(RBdetails)
-        // console.log(`★ RB summary created, here is the result...`);
-        // console.log(RBdetailsResult);
-      } catch (error) {
-        await fn.SendBUGmsg("RBdetailsResult", "index.js", error)
-      }
-
-    }
-    else {    //this RBno is exist => update records
+      //weight RB into budgets
 
     }
 
 
-
-
-
+  }
+  else {
+    
   }
 
 
@@ -870,7 +1100,7 @@ app.post('/slack/events' , async(req, res) => {
   
   
   //If there are event => Do something
-
+  /*
   if(req.body.event) {
     const event = req.body.event;
     // console.log(`★ event = ${JSON.stringify(event)}`);
@@ -936,7 +1166,7 @@ app.post('/slack/events' , async(req, res) => {
       }
       // console.log(queryParam)
       try {
-        var existingRec = await baseSlackLog("Message logs").select(queryParam)
+        var existingRec = await baseSlackLog("Message logs").select(queryParam).all()
       } catch (error) {
         await fn.SendBUGmsg("existingRec", "index.js", error)
       }
@@ -1231,6 +1461,7 @@ app.post('/slack/events' , async(req, res) => {
 
     }
   }
+  */
   
   res.end();
 
@@ -1955,6 +2186,9 @@ app.post('/slack/actions', async(req, res) => {
         // console.log(RBcache);
 
       }
+      else {
+        res.sendStatus(200);
+      }
     }
     //view_submission
     else if(type == "view_submission") {
@@ -2489,8 +2723,75 @@ app.post('/slack/actions', async(req, res) => {
 
 });
 
+//=============================Airtable scripts=============================
+app.post("/airtable/hooks/:command", async (req, res) => {
+  //LOG REQUEST===============
+  console.log("--------------- REQUEST STARTS HERE---------------");
+  // console.log("----------req----------");
+  // console.log(req);
+  console.log("----------req.url----------");
+  console.log(req.url);
+  console.log("----------req.route----------");
+  console.log(req.route);
+  console.log("----------req.body----------");
+  console.log(req.body);
+  console.log("----------req.body.string----------");
+  console.log(JSON.stringify(req.body));
+  console.log("----------req.params----------");
+  console.log(req.params);
+  console.log("----------req.query----------");
+  console.log(req.query);
+  console.log("----------req.data----------");
+  console.log(req.data);
+  console.log("--------------- REQUEST ENDS HERE---------------");
+  
+  //RESPONSE TO COMMANDS===============,
+  // let command = req.body.command;
+  let command = req.params.command;
+  console.log(`commmand = ${command}`);
 
+  if(command == "sendSlackErrorMsg") {
+    console.log('★ send Slack error message to "bug" channel');
+    let { functionName, fileName, error } = req.body;
+    // console.log(`functionName = ${functionName}`);
+    // console.log(`fileName = ${fileName}`);
+    // console.log(`error = ${error}`);
 
+    await fn.SendBUGmsg(functionName, fileName, error).then(() => {
+      res.send('★ send Slack error message to "bug" channel completed!');
+    })
+    .catch ((err) => {
+      console.log(`Can't send bug, send console.error`);
+      console.error("can't send bug to 'bug' channel, reason unknown");
+      res.send("can't send bug to 'bug' channel, reason unknown")
+    });
+
+  }
+  else if(command == "slackNewCodeWarningMsg") {
+    console.log(`★ send Slack warning message to user's DM`);
+    let { slackUserData, RBdata, budgetData } = req.body;
+
+    //run slack warning function
+    await axios.post("https://slack.com/api/chat.postMessage", qs.stringify(await msg.slackNewCodeWarningMsg(req.body)))
+    .then((response) => {
+      console.log('message sent!');
+      console.log(`response.data =`);
+      console.log(response.data);
+      res.send(`warning message posted!,\n\n ${JSON.stringify(response.data)}`);
+    })
+    .catch(async (err) => {
+      console.error(err);
+      await fn.SendBUGmsg("msg.slackNewCodeWarningMsg", "index.js", err)
+      res.send(`can't send message, send ERROR message to BUG channel instead`);
+    })
+
+  }
+  else {
+    console.log('command not matched');
+    res.send('command not matched');
+  }
+
+});
 
 
 
