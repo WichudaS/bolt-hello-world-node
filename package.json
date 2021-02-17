@@ -25,5 +25,9 @@
   },
   "author": "Wichuda Sirithana",
   "license": "MIT",
-  "keywords": ["node", "glitch", "express"]
+  "keywords": [
+    "node",
+    "glitch",
+    "express"
+  ]
 }
