@@ -101,7 +101,7 @@ app.get("/", async function (req, res) {
 
 //=============================Jotform webhooks====================================
 app.post("/jotform/hooks", async function (req, res) {
-  console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
+  // console.log("=================JOTFORM WEBHOOKS RECEIVED===================");
   res.status(200).send("OK"); // ห้ามใส่ .end() ตรงนี้เด็ดขาดเพราะจะทำให้ res.send() ข้างล่างส่งไม่ได้
 
   //================= Parse JotForm request to JSON ===============================
@@ -134,29 +134,29 @@ app.post("/jotform/hooks", async function (req, res) {
 
   //------------------------------------------------------------------------------------------------
 
-  console.log(`★ formID is = \n ${formID}`);
-  console.log(`★ formTitle = ${formTitle}`);
-  console.log(`★ submissionID = ${submissionID}`);
+  // console.log(`★ formID is = \n ${formID}`);
+  // console.log(`★ formTitle = ${formTitle}`);
+  // console.log(`★ submissionID = ${submissionID}`);
 
   var parsed = JSON.parse(raw);
-  console.log(`★ parsed = \n`);
-  console.log(JSON.stringify(parsed));
+  // console.log(`★ parsed = \n`);
+  // console.log(JSON.stringify(parsed));
 
   var key = Object.keys(parsed);
-  console.log(`★ parsed key = \n ${key}`);
+  // console.log(`★ parsed key = \n ${key}`);
 
-  console.log(`★ keylength = ${key.length}`);
+  // console.log(`★ keylength = ${key.length}`);
 
   for (var i = 0; i < key.length; i++) {
     var k = key[i];
 
-    console.log(`★ ${i + 1}.${k} = `);
-    console.log(parsed[k]);
+    // console.log(`★ ${i + 1}.${k} = `);
+    // console.log(parsed[k]);
   }
 
-  console.log(
-    "=================JOTFORM WEBHOOKS RECEIVED END==================="
-  );
+  // console.log(
+  //   "=================JOTFORM WEBHOOKS RECEIVED END==================="
+  // );
 
   if (formTitle == "Daily Report") {
     let DRno = parsed["q116_uniqueId"].split("_"); //change string into array
@@ -1322,13 +1322,13 @@ app.post("/slack/events", async (req, res) => {
   res.status(200);
 
   //LOG REQUEST===============
-  console.log(
-    "---------------" + req.body.type + " REQUEST STARTS HERE---------------"
-  );
+  // console.log(
+  //   "---------------" + req.body.type + " REQUEST STARTS HERE---------------"
+  // );
   // console.log("----------req.body.type----------");
   // console.log(req.body.type);
-  console.log("----------req.body----------");
-  console.log(req.body);
+  // console.log("----------req.body----------");
+  // console.log(req.body);
   // console.log("----------req.body.string----------");
   // console.log(JSON.stringify(req.body));
   // console.log("----------req.body.context----------");
@@ -1337,9 +1337,9 @@ app.post("/slack/events", async (req, res) => {
   // console.log(req.body.payload);
   // console.log("----------req.body.event----------");
   // console.log(req.body.event);
-  console.log(
-    "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
-  );
+  // console.log(
+  //   "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
+  // );
   //RESPONSE TO EVENT CASES===============,
   switch (req.body.type) {
     //RESPONSE TO URL VERIFICATION===============
@@ -1454,7 +1454,6 @@ app.post("/slack/events", async (req, res) => {
       }
     }
 
-    /*
     //Save every HUMAN messages in every channel to Airtable ==============================================
     if(event.type == "message" && !(event.subtype=="bot_message") && !(event.hidden) && !(req.body.hidden) && !event.bot_profile && !event.bot_id) {
       // console.log(`★ Save every message in every channel to Airtable for analytics`);
@@ -1810,7 +1809,6 @@ app.post("/slack/events", async (req, res) => {
 
 
     }
-    */
   }
 
   res.end();
