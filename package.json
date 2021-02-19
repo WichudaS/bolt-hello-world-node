@@ -1,7 +1,7 @@
 {
-  "name": "bolt-hello-world-node",
+  "name": "upgrade-sengbugmsg-function",
   "version": "0.0.1",
-  "description": "Stickie note app to demonstrate App Home feature.",
+  "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -25,9 +25,5 @@
   },
   "author": "Wichuda Sirithana",
   "license": "MIT",
-  "keywords": [
-    "node",
-    "glitch",
-    "express"
-  ]
+  "keywords": []
 }

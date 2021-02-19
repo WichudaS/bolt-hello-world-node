@@ -820,7 +820,7 @@ app.post("/jotform/hooks", async function (req, res) {
       console.log(`★ save to DB completed!, here is the result...`);
       console.log(FScreatedResult);
     } catch (error) {
-      await fn.SendBUGmsg("FScreatedResult", "index.js", error);
+      await fn.SendBUGmsg("FScreatedResult", "index.js", error, req.body);
     }
 
     //set Airtable API endpoint for base MS400
@@ -844,7 +844,7 @@ app.post("/jotform/hooks", async function (req, res) {
         return chunks;
       })
       .catch(async (error) => {
-        await fn.SendBUGmsg("RBsummaryQuery", "index.js", error);
+        await fn.SendBUGmsg("RBsummaryQuery", "index.js", error, req.body);
       });
 
     console.log(`★ RBsummary query = ${RBsummaryQuery}`);
@@ -859,7 +859,7 @@ app.post("/jotform/hooks", async function (req, res) {
             return record.id;
           });
       } catch (error) {
-        await fn.SendBUGmsg("RBsummaryCreated", "index.js", error);
+        await fn.SendBUGmsg("RBsummaryCreated", "index.js", error, req.body);
       }
     } else {
       //some existing record => udpate record
@@ -871,7 +871,7 @@ app.post("/jotform/hooks", async function (req, res) {
             return record.id;
           });
       } catch (error) {
-        await fn.SendBUGmsg("RBsummaryUpdated", "index.js", error);
+        await fn.SendBUGmsg("RBsummaryUpdated", "index.js", error, req.body);
       }
     }
 
@@ -899,7 +899,7 @@ app.post("/jotform/hooks", async function (req, res) {
         try {
           await baseMS400("MS400").destroy(chunk);
         } catch (error) {
-          await fn.SendBUGmsg("RBdetailsDeleted", "index.js", error);
+          await fn.SendBUGmsg("RBdetailsDeleted", "index.js", error, req.body);
         }
       }
     }
@@ -908,7 +908,7 @@ app.post("/jotform/hooks", async function (req, res) {
     try {
       await baseMS400("MS400").create(RBdetails, { typecast: true });
     } catch (error) {
-      await fn.SendBUGmsg("RBdetailsCreated", "index.js", error);
+      await fn.SendBUGmsg("RBdetailsCreated", "index.js", error, req.body);
     }
   } else if (formTitle == "Requested budget_New code verification") {
     console.log(
@@ -1009,7 +1009,7 @@ app.post("/jotform/hooks", async function (req, res) {
           console.log(
             `can't send message, send ERROR message to BUG channel instead`
           );
-          await fn.SendBUGmsg("fn.SendErrorMsg", "functions.js", err);
+          await fn.SendBUGmsg("fn.SendErrorMsg", "functions.js", err, req.body);
         });
 
       //send slack warning message *again*
@@ -1032,7 +1032,12 @@ app.post("/jotform/hooks", async function (req, res) {
           console.log(
             `can't send message, send ERROR message to BUG channel instead`
           );
-          await fn.SendBUGmsg("msg.slackNewCodeWarningMsg", "index.js", err);
+          await fn.SendBUGmsg(
+            "msg.slackNewCodeWarningMsg",
+            "index.js",
+            err,
+            req.body
+          );
         });
     }
     //if no modified recordID => continue...
@@ -1132,7 +1137,7 @@ app.post("/jotform/hooks", async function (req, res) {
           );
         } catch (err) {
           console.error(err);
-          await fn.SendBUGmsg("NewBudgetCreate", "index.js", error);
+          await fn.SendBUGmsg("NewBudgetCreate", "index.js", error, req.body);
         }
       }
       //1.2 add into stack => waiting to be  weighting RB
@@ -1375,7 +1380,11 @@ app.post("/slack/events", async (req, res) => {
       let { command, request, response } = JSON.parse(event.text) || "";
 
       if (command == "CODA_createNewDoc") {
-        await axios.post("https://hook.integromat.com/8y5omxcwprpsnwlrsujt38i1tllp1dw9", qs.stringify(request))
+        await axios
+          .post(
+            "https://hook.integromat.com/8y5omxcwprpsnwlrsujt38i1tllp1dw9",
+            qs.stringify(request)
+          )
           .then(async (res) => {
             //PUT checked on coda table
             console.log(`create doc result = ${res.data}`);
@@ -1447,55 +1456,62 @@ app.post("/slack/events", async (req, res) => {
             await fn.SendBUGmsg(
               "CODA_createNewDoc (axios result)",
               "index.js",
-              err
+              err,
+              req.body
             );
           });
-
       }
     }
 
     //Save every HUMAN messages in every channel to Airtable ==============================================
-    if(event.type == "message" && !(event.subtype=="bot_message") && !(event.hidden) && !(req.body.hidden) && !event.bot_profile && !event.bot_id) {
+    if (
+      event.type == "message" &&
+      !(event.subtype == "bot_message") &&
+      !event.hidden &&
+      !req.body.hidden &&
+      !event.bot_profile &&
+      !event.bot_id
+    ) {
       // console.log(`★ Save every message in every channel to Airtable for analytics`);
       res.sendStatus(204);
-      
+
       var actType = event.type;
       var actSubtype = event.subtype;
       var text = event.text;
-      var dateTime = dateFormat ("isoDateTime")
+      var dateTime = dateFormat("isoDateTime");
       var poster = event.user;
       var channel = event.channel;
-      var attachments = event.attachments ? event.attachments[0].text || event.attachments[0].fallback: "";
+      var attachments = event.attachments
+        ? event.attachments[0].text || event.attachments[0].fallback
+        : "";
       var fileAttachments = event.files ? event.files[0].name : "";
 
-      //if message is shared => write in text 
-      if(event.attachments && !(event.text)) {
-        if(event.attachments[0].is_share == true) {
+      //if message is shared => write in text
+      if (event.attachments && !event.text) {
+        if (event.attachments[0].is_share == true) {
           text = "แชร์ข้อความ";
         }
       }
 
-      //if file is shared => write in text 
-      if(event.files && !(event.text)) {
-          text = "แชร์ไฟล์";
+      //if file is shared => write in text
+      if (event.files && !event.text) {
+        text = "แชร์ไฟล์";
       }
-      
 
       var eventLayout = {
         "Activity Type": actType,
         "Activity Subtype": actSubtype,
-        "Text": text,
+        Text: text,
         "Posted time": dateTime,
         "Poster ID": poster,
         "Channel ID": channel,
-        "Shared message" : attachments,
-        "File attachments" : fileAttachments,
+        "Shared message": attachments,
+        "File attachments": fileAttachments,
         "Slack payload": JSON.stringify(event)
       };
 
       // console.log(`★ event layout to be saved =`);
       // console.log(JSON.stringify(eventLayout));
-
 
       //check if there are already identical records in the table
       var filterFormula = `AND(
@@ -1508,76 +1524,101 @@ app.post("/slack/events", async (req, res) => {
         {Shared message}='${attachments}'
       )`;
       var queryParam = {
-        "maxRecords": 1,
-        "view":"For Server Query (3 min tolerance)",
-        "filterByFormula": filterFormula,
-        "fields": ["Posted time"] 
-      }
+        maxRecords: 1,
+        view: "For Server Query (3 min tolerance)",
+        filterByFormula: filterFormula,
+        fields: ["Posted time"]
+      };
       // console.log(queryParam)
       try {
-        var existingRec = await baseSlackLog("Message logs").select(queryParam).all()
+        var existingRec = await baseSlackLog("Message logs")
+          .select(queryParam)
+          .all();
       } catch (error) {
-        await fn.SendBUGmsg("existingRec", "index.js", error)
+        await fn.SendBUGmsg("existingRec", "index.js", error, req.body);
       }
-      if(!existingRec.id) {
+      if (!existingRec.id) {
         //no existing record => create new record
         //create new record in Airtable
         try {
-          let recordCreatedResult = await baseSlackLog("Message logs").create(eventLayout, {typecast: true})
+          let recordCreatedResult = await baseSlackLog(
+            "Message logs"
+          ).create(eventLayout, { typecast: true });
         } catch (error) {
-          await fn.SendBUGmsg("recordCreatedResult", "index.js", error)
+          await fn.SendBUGmsg(
+            "recordCreatedResult",
+            "index.js",
+            error,
+            req.body
+          );
         }
       }
-
     }
 
-    
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable' ======================
-    if(event.type=="message" && event.subtype=="bot_message" && event.bot_id=="B016J4F8FEV" && event.channel=="C014URKUUBX") {
+    if (
+      event.type == "message" &&
+      event.subtype == "bot_message" &&
+      event.bot_id == "B016J4F8FEV" &&
+      event.channel == "C014URKUUBX"
+    ) {
       // console.log("★ CASE: Save jibble message to Airtable");
       res.sendStatus(204);
       //===DECLARE VAR====
 
-
-  // *UPDATE* แก้ format ชื่อ
+      // *UPDATE* แก้ format ชื่อ
       var name = [];
-      name = name.concat(event.text.split("*").splice(0,1).reduce((n) => n).replace("DC" , "").trim());
+      name = name.concat(
+        event.text
+          .split("*")
+          .splice(0, 1)
+          .reduce((n) => n)
+          .replace("DC", "")
+          .trim()
+      );
       // console.log(`★ name = ${name}`);
       var project = [];
       var workType = [];
       var des = [];
       var imgURL = "";
 
-      if(event.attachments) {
+      if (event.attachments) {
         for (var i of event.attachments) {
           // console.log("★ i = " + JSON.stringify(i));
           if (Object.keys(i).includes("text")) {
-            try{
-              var projectAndWork = i.text.split("*").splice(1,1).toString().split("_");
-              if(projectAndWork.length > 1 ) {
+            try {
+              var projectAndWork = i.text
+                .split("*")
+                .splice(1, 1)
+                .toString()
+                .split("_");
+              if (projectAndWork.length > 1) {
                 project = project.concat(projectAndWork[0].trim());
                 workType = workType.concat(projectAndWork[1].trim());
-              }
-              else {
+              } else {
                 workType = workType.concat(projectAndWork[0].trim());
               }
 
-              des = des.concat(i.text.split("\n").splice(1,1).toString().slice(1,-1).trim());
-              if(des.includes(null) || des.includes(undefined) || des.includes("")) {
-                des = des.filter(n => n!= null && n!= undefined && n!="");
+              des = des.concat(
+                i.text.split("\n").splice(1, 1).toString().slice(1, -1).trim()
+              );
+              if (
+                des.includes(null) ||
+                des.includes(undefined) ||
+                des.includes("")
+              ) {
+                des = des.filter((n) => n != null && n != undefined && n != "");
               }
+            } catch (err) {
+              console.error(err);
             }
-            catch (err) {console.error(err);
-            };
             // console.log(`★ project = ${project}`);
             // console.log(`★ workType = ${workType}`);
             // console.log(`★ des = ${des}`);
-          }
-          else if (Object.keys(i).includes("image_url")) {
+          } else if (Object.keys(i).includes("image_url")) {
             imgURL = i.image_url;
             // console.log(`★ imgURL = ${imgURL}`);
-          }
-          else {
+          } else {
             // console.log(`★ project = ${project}`);
             // console.log(`★ workType = ${workType}`);
             // console.log(`★ des = ${des}`);
@@ -1597,43 +1638,47 @@ app.post("/slack/events", async (req, res) => {
       recordPK.toString();
       // console.log(`★ recordPK = ${recordPK}`);
 
-
       //===DECLARE FUNCTION===
-  // *UPDATE* แยกเป็น staff กับ คนงาน
-        //Airtable Layout
-      function JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL) {
+      // *UPDATE* แยกเป็น staff กับ คนงาน
+      //Airtable Layout
+      function JibbleLayout(
+        event,
+        recordID,
+        name,
+        dateTime,
+        workType,
+        des,
+        day,
+        imgURL
+      ) {
         // console.log("=====Jibbled in layout=====");
         return new Promise((resolve, reject) => {
-
           if (event.text.includes("jibbled")) {
             if (event.text.includes("jibbled in")) {
               let layout = {};
-              if(workType.includes("DC")) {
+              if (workType.includes("DC")) {
                 layout = {
-                  "fields": {
-                    "ชื่อคนงาน": name,
+                  fields: {
+                    ชื่อคนงาน: name,
                     "เวลาเข้างาน (First In)": dateTime,
-                    "โครงการ": project,
-                    "ประเภทงาน": workType,
-                    "รายละเอียด": des,
-                    "วันที่": day
+                    โครงการ: project,
+                    ประเภทงาน: workType,
+                    รายละเอียด: des,
+                    วันที่: day
                   }
-                }
-              }
-              else {
+                };
+              } else {
                 layout = {
-                  "fields": {
-                    "ชื่อพนักงาน": name,
+                  fields: {
+                    ชื่อพนักงาน: name,
                     "เวลาเข้างาน (First In)": dateTime,
-                    "โครงการ": project,
-                    "ประเภทงาน": workType,
-                    "รายละเอียด": des,
-                    "วันที่": day
+                    โครงการ: project,
+                    ประเภทงาน: workType,
+                    รายละเอียด: des,
+                    วันที่: day
                   }
-                }
+                };
               }
-
-
 
               let layoutArray = [];
               layoutArray = layoutArray.concat(layout);
@@ -1641,11 +1686,10 @@ app.post("/slack/events", async (req, res) => {
               // console.log(JSON.stringify(layoutArray));
               resolve(layoutArray);
             }
-
           } else {
             reject();
           }
-        }).catch(err => {
+        }).catch((err) => {
           // console.log(err);
         });
       }
@@ -1663,41 +1707,50 @@ app.post("/slack/events", async (req, res) => {
             // console.log(`case recordPK`);
             //find an existing Task recordID from AIRTABLE_BASE_ID
             base("บันทึกเวลาเข้าออก")
-            .select({
-              maxRecords: 1,
-              view: "Grid view",
-              fields: ["ชื่อและวันที่","ชื่อพนักงาน","ชื่อคนงาน","วันที่","เวลาเข้างาน (First In)", "เวลาออกงาน (Last Out)","ประเภทงาน","รายละเอียด","โครงการ"],
-              filterByFormula: `AND( {ชื่อและวันที่}="${recordPK}" , {เวลาออกงาน (Last Out)}=BLANK() )` ,
-              sort: [{field: "เวลาเข้างาน (First In)", direction: "desc"}]
-            }).all()
-            .then((records) => {
-              // console.log(`★ case successful`);
-              // console.log(records);
-              if(records.length>0) {
-                records.forEach(item => {
-                  // console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
-                  // console.log(`★ The recordID is = ${item.id}`);
-                  // console.log(item);
+              .select({
+                maxRecords: 1,
+                view: "Grid view",
+                fields: [
+                  "ชื่อและวันที่",
+                  "ชื่อพนักงาน",
+                  "ชื่อคนงาน",
+                  "วันที่",
+                  "เวลาเข้างาน (First In)",
+                  "เวลาออกงาน (Last Out)",
+                  "ประเภทงาน",
+                  "รายละเอียด",
+                  "โครงการ"
+                ],
+                filterByFormula: `AND( {ชื่อและวันที่}="${recordPK}" , {เวลาออกงาน (Last Out)}=BLANK() )`,
+                sort: [{ field: "เวลาเข้างาน (First In)", direction: "desc" }]
+              })
+              .all()
+              .then((records) => {
+                // console.log(`★ case successful`);
+                // console.log(records);
+                if (records.length > 0) {
+                  records.forEach((item) => {
+                    // console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
+                    // console.log(`★ The recordID is = ${item.id}`);
+                    // console.log(item);
 
-                  resolve(item.id);
-                });
-              }
-              else {
-                // console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
-                recordID = "";
-                resolve(recordID);
-              }
-            });
+                    resolve(item.id);
+                  });
+                } else {
+                  // console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
+                  recordID = "";
+                  resolve(recordID);
+                }
+              });
           } else {
             // console.log("★ Nothing match your search");
             reject();
           }
-        }).catch(err => {
+        }).catch((err) => {
           // console.log("★ Record not found, set recordID to empty.");
-          recordID="";
+          recordID = "";
         });
       }
-
 
       //Create new record
       function RecordCreate(base, tableName, dataGroup) {
@@ -1710,12 +1763,15 @@ app.post("/slack/events", async (req, res) => {
           let outputText = "";
           if (dataGroup) {
             var allRecord = [];
-            base(tableName).create(dataGroup, { typecast: true }, function(err,records) {
+            base(tableName).create(dataGroup, { typecast: true }, function (
+              err,
+              records
+            ) {
               if (err) {
                 console.error(err);
                 return;
               }
-              records.forEach(function(record) {
+              records.forEach(function (record) {
                 allRecord = allRecord.concat(record);
                 outputText = `★ record ID ${record.id} from ${tableName} is CREATED!`;
               });
@@ -1726,7 +1782,7 @@ app.post("/slack/events", async (req, res) => {
           } else {
             reject();
           }
-        }).catch(err => {
+        }).catch((err) => {
           // console.log(err);
         });
       }
@@ -1741,7 +1797,7 @@ app.post("/slack/events", async (req, res) => {
         return new Promise((resolve, reject) => {
           let text = "";
           if (dataGroup) {
-            base(tableName).update(dataGroup, { typecast: true }, function(
+            base(tableName).update(dataGroup, { typecast: true }, function (
               err,
               records
             ) {
@@ -1749,20 +1805,18 @@ app.post("/slack/events", async (req, res) => {
                 console.error(err);
                 return;
               }
-              records.forEach(function(record) {
-                text = `record ID ${record.id} from ${tableName} is UPDATED!`
+              records.forEach(function (record) {
+                text = `record ID ${record.id} from ${tableName} is UPDATED!`;
               });
               resolve(text);
             });
           } else {
             reject();
           }
-        }).catch(err => {
+        }).catch((err) => {
           // console.log(err);
         });
       }
-
-
 
       //===RUN===
 
@@ -1776,38 +1830,47 @@ app.post("/slack/events", async (req, res) => {
       // console.log(`★ recordID = ${recordID}`);
 
       // Jibbled out the existing record
-      if(recordID) {
+      if (recordID) {
         // console.log(`★ There is an existing record that hasn't Jibbled out yet, Jibble out this record`);
-        let jibOutData = [{
-          "id": recordID,
-          "fields": {
-            "เวลาออกงาน (Last Out)": dateTime
+        let jibOutData = [
+          {
+            id: recordID,
+            fields: {
+              "เวลาออกงาน (Last Out)": dateTime
+            }
           }
-        }];
+        ];
         try {
           let updateRecord = await RecordUpdate(baseDR, tableName, jibOutData);
-          // console.log(updateRecord); 
+          // console.log(updateRecord);
         } catch (error) {
-          await fn.SendBUGmsg("updateRecord", "index.js", error)
+          await fn.SendBUGmsg("updateRecord", "index.js", error, req.body);
         }
       }
 
       // Check if it's Jibbled in or out
       // Jibbled in case, create new record
-      if(event.text.includes("*jibbled in*")) {
+      if (event.text.includes("*jibbled in*")) {
         // create new record
-        var dataGroup = await JibbleLayout( event , recordID, name , dateTime ,workType, des, day, imgURL);
+        var dataGroup = await JibbleLayout(
+          event,
+          recordID,
+          name,
+          dateTime,
+          workType,
+          des,
+          day,
+          imgURL
+        );
         // console.log(`★ dataGroup =`);
         // console.log(dataGroup);
         try {
           var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
           // console.log(createRecord);
         } catch (error) {
-          await fn.SendBUGmsg("createRecord", "index.js", error)
+          await fn.SendBUGmsg("createRecord", "index.js", error, req.body);
         }
       }
-
-
     }
   }
 
@@ -3284,7 +3347,7 @@ app.post("/airtable/hooks/:command", async (req, res) => {
     // console.log(`error = ${error}`);
 
     await fn
-      .SendBUGmsg(functionName, fileName, error)
+      .SendBUGmsg(functionName, fileName, error, req.body)
       .then(() => {
         res.send('★ send Slack error message to "bug" channel completed!');
       })
@@ -3312,7 +3375,12 @@ app.post("/airtable/hooks/:command", async (req, res) => {
       })
       .catch(async (err) => {
         console.error(err);
-        await fn.SendBUGmsg("msg.slackNewCodeWarningMsg", "index.js", err);
+        await fn.SendBUGmsg(
+          "msg.slackNewCodeWarningMsg",
+          "index.js",
+          err,
+          req.body
+        );
         res.send(
           `can't send message, send ERROR message to BUG channel instead`
         );
