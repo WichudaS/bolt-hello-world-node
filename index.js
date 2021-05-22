@@ -5,14 +5,6 @@
 */
 
 //=============================INITIALIZE APP=============================
-/*
- * Slack API Demo
- * This example shows how to ustilize the App Home feature
- * October 11, 2019
- *
- * This example is written in Vanilla-ish JS with Express (No Slack SDK or Framework)
- * To see how this can be written in Bolt, https://glitch.com/edit/#!/apphome-bolt-demo-note
- */
 
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -59,14 +51,6 @@ const baseSlackLog = new Airtable(process.env.AIRTABLE_API_KEY).base(
 ); //base "Slack activity logs"
 
 //========================================================================================
-
-/*
- * Parse application/x-www-form-urlencoded && application/json
- * Use body-parser's `verify` callback to export a parsed raw body
- * that you need to use to verify the signature
- *
- * Forget this if you're using Bolt framework or either SDK, otherwise you need to implement this by yourself to verify signature!
- */
 
 const rawBodyBuffer = (req, res, buf, encoding) => {
   if (buf && buf.length) {
@@ -1324,16 +1308,16 @@ app.post("/integromat/hooks", async function (req, res) {
 //Uncomment this line below to Stop slack from event running
 // app.get('/event' , async(req, res) => {
 app.post("/slack/events", async (req, res) => {
-  res.status(200);
+  // res.status(200);
 
   //LOG REQUEST===============
-  // console.log(
-  //   "---------------" + req.body.type + " REQUEST STARTS HERE---------------"
-  // );
+  console.log(
+    "---------------" + req.body.type + " REQUEST STARTS HERE---------------"
+  );
   // console.log("----------req.body.type----------");
   // console.log(req.body.type);
-  // console.log("----------req.body----------");
-  // console.log(req.body);
+  console.log("----------req.body----------");
+  console.log(req.body);
   // console.log("----------req.body.string----------");
   // console.log(JSON.stringify(req.body));
   // console.log("----------req.body.context----------");
@@ -1342,9 +1326,9 @@ app.post("/slack/events", async (req, res) => {
   // console.log(req.body.payload);
   // console.log("----------req.body.event----------");
   // console.log(req.body.event);
-  // console.log(
-  //   "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
-  // );
+  console.log(
+    "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
+  );
   //RESPONSE TO EVENT CASES===============,
   switch (req.body.type) {
     //RESPONSE TO URL VERIFICATION===============
@@ -1464,6 +1448,12 @@ app.post("/slack/events", async (req, res) => {
     }
 
     //Save every HUMAN messages in every channel to Airtable ==============================================
+    /*
+     * *UPDATE 22/05/2021*
+     *
+     * CLOSED THIS MODULE DUE TO INACTIVITY (BOOM ISN'T USING IT ANYMORE AND AIRTABLE SUBSCRIPTION HAS CANCELLED)
+     */
+    /*
     if (
       event.type == "message" &&
       !(event.subtype == "bot_message") &&
@@ -1535,7 +1525,8 @@ app.post("/slack/events", async (req, res) => {
           .select(queryParam)
           .all();
       } catch (error) {
-        await fn.SendBUGmsg("existingRec", "index.js", error, req.body);
+        //แค่ปิดเตือนเฉยๆ ไม่ได้แก้อะไร เพราะคิดว่าบูมไม่น่าจะได้ใช้แล้ว และเรายกเลิก Airtable ไปแล้วด้วย
+        // await fn.SendBUGmsg("existingRec", "index.js", error, req.body);
       }
       if (!existingRec.id) {
         //no existing record => create new record
@@ -1554,29 +1545,29 @@ app.post("/slack/events", async (req, res) => {
         }
       }
     }
+    */
 
-    //'incoming Jibble message' in '#hr in-out channel' => 'Save to Airtable' ======================
+    //'incoming Jibble message' in '#hr in-out channel' => 'Save to CODA' ======================
+    //*UPDATE 22/05/2021* : change Timetable storing database to from 'Airtable' to 'CODA'
+
     if (
       event.type == "message" &&
       event.subtype == "bot_message" &&
       event.bot_id == "B016J4F8FEV" &&
       event.channel == "C014URKUUBX"
     ) {
-      // console.log("★ CASE: Save jibble message to Airtable");
+      // console.log("★ CASE: Save jibble message to CODA");
       res.sendStatus(204);
       //===DECLARE VAR====
 
       // *UPDATE* แก้ format ชื่อ
-      var name = [];
-      name = name.concat(
-        event.text
-          .split("*")
-          .splice(0, 1)
-          .reduce((n) => n)
-          .replace("DC", "")
-          .trim()
-      );
-      // console.log(`★ name = ${name}`);
+      var name = event.text
+        .split("*")
+        .splice(0, 1)
+        .reduce((n) => n)
+        .replace("DC", "")
+        .trim();
+      console.log(`★ name = ${name}`);
       var project = [];
       var workType = [];
       var des = [];
@@ -1631,246 +1622,120 @@ app.post("/slack/events", async (req, res) => {
       var dateTime = new Date(new Date().toLocaleString());
       // console.log(`★ dateTime = ${dateTime}`);
 
-      var day = dateFormat(dateTime, "dd/mm/yyyy");
+      var day = dateFormat(dateTime, "yyyy-mm-dd");
       // console.log(`★ day = ${day}`);
 
       const recordPK = `${name} - ${day}`;
       recordPK.toString();
+
       // console.log(`★ recordPK = ${recordPK}`);
 
-      //===DECLARE FUNCTION===
-      // *UPDATE* แยกเป็น staff กับ คนงาน
-      //Airtable Layout
-      function JibbleLayout(
-        event,
-        recordID,
-        name,
-        dateTime,
-        workType,
-        des,
-        day,
-        imgURL
-      ) {
-        // console.log("=====Jibbled in layout=====");
-        return new Promise((resolve, reject) => {
-          if (event.text.includes("jibbled")) {
-            if (event.text.includes("jibbled in")) {
-              let layout = {};
-              if (workType.includes("DC")) {
-                layout = {
-                  fields: {
-                    ชื่อคนงาน: name,
-                    "เวลาเข้างาน (First In)": dateTime,
-                    โครงการ: project,
-                    ประเภทงาน: workType,
-                    รายละเอียด: des,
-                    วันที่: day
-                  }
-                };
-              } else {
-                layout = {
-                  fields: {
-                    ชื่อพนักงาน: name,
-                    "เวลาเข้างาน (First In)": dateTime,
-                    โครงการ: project,
-                    ประเภทงาน: workType,
-                    รายละเอียด: des,
-                    วันที่: day
-                  }
-                };
-              }
-
-              let layoutArray = [];
-              layoutArray = layoutArray.concat(layout);
-
-              // console.log(JSON.stringify(layoutArray));
-              resolve(layoutArray);
-            }
-          } else {
-            reject();
-          }
-        }).catch((err) => {
-          // console.log(err);
-        });
-      }
-
-      //Search for Airtable record
-      function RetrieveID(base, tableName, recordPK) {
-        // console.log("=====Retrieve record=====");
-        // console.log(`★ tableName = ${tableName}`);
-        // console.log(`★ recordPK = ${recordPK}`);
-        // console.log(`base = ${base}`);
-        // console.log(`★ filerformula = {ชื่อและวันที่}="${recordPK}"` );
-
-        return new Promise((resolve, reject) => {
-          if (recordPK) {
-            // console.log(`case recordPK`);
-            //find an existing Task recordID from AIRTABLE_BASE_ID
-            base("บันทึกเวลาเข้าออก")
-              .select({
-                maxRecords: 1,
-                view: "Grid view",
-                fields: [
-                  "ชื่อและวันที่",
-                  "ชื่อพนักงาน",
-                  "ชื่อคนงาน",
-                  "วันที่",
-                  "เวลาเข้างาน (First In)",
-                  "เวลาออกงาน (Last Out)",
-                  "ประเภทงาน",
-                  "รายละเอียด",
-                  "โครงการ"
-                ],
-                filterByFormula: `AND( {ชื่อและวันที่}="${recordPK}" , {เวลาออกงาน (Last Out)}=BLANK() )`,
-                sort: [{ field: "เวลาเข้างาน (First In)", direction: "desc" }]
-              })
-              .all()
-              .then((records) => {
-                // console.log(`★ case successful`);
-                // console.log(records);
-                if (records.length > 0) {
-                  records.forEach((item) => {
-                    // console.log(`★ There is an existing record that hasn't Jibbled out yet, update Jibbled out time BEFORE creating new record`)
-                    // console.log(`★ The recordID is = ${item.id}`);
-                    // console.log(item);
-
-                    resolve(item.id);
-                  });
-                } else {
-                  // console.log(`★ There is no existing record that does not Jibbled out yet, create new record only`);
-                  recordID = "";
-                  resolve(recordID);
+      //  console.log everything before sending
+      console.log(`★ PAYLOAD TO BE SEND TO CODA IS`);
+      console.log(
+        JSON.stringify({
+          rows: [
+            {
+              cells: [
+                {
+                  column: "ชื่อพนักงาน",
+                  value: workType.includes("DC") ? "" : name
+                },
+                {
+                  column: "ชื่อคนงาน",
+                  value: workType.includes("DC") ? name : ""
+                },
+                {
+                  column: "วันที่",
+                  value: dateTime || ""
+                },
+                {
+                  column: "เวลาเข้างาน (First In)",
+                  value: event.text.includes("jibbled in") ? dateTime : ""
+                },
+                {
+                  column: "เวลาออกงาน (Last Out)",
+                  value: event.text.includes("jibbled in") ? "" : dateTime
+                },
+                {
+                  column: "โครงการ",
+                  value: project.join(",")
+                },
+                {
+                  column: "ประเภทงาน",
+                  value: workType.join(",")
+                },
+                {
+                  column: "รายละเอียด",
+                  value: des.join(",")
                 }
-              });
-          } else {
-            // console.log("★ Nothing match your search");
-            reject();
-          }
-        }).catch((err) => {
-          // console.log("★ Record not found, set recordID to empty.");
-          recordID = "";
-        });
-      }
-
-      //Create new record
-      function RecordCreate(base, tableName, dataGroup) {
-        // console.log("=====Create new record=====");
-        //test OK!
-        // console.log("★ dataGroup = ");
-        // console.log(dataGroup);
-
-        return new Promise((resolve, reject) => {
-          let outputText = "";
-          if (dataGroup) {
-            var allRecord = [];
-            base(tableName).create(dataGroup, { typecast: true }, function (
-              err,
-              records
-            ) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              records.forEach(function (record) {
-                allRecord = allRecord.concat(record);
-                outputText = `★ record ID ${record.id} from ${tableName} is CREATED!`;
-              });
-              // console.log("★ allRecord = ");
-              // console.log(allRecord);
-              resolve(outputText);
-            });
-          } else {
-            reject();
-          }
-        }).catch((err) => {
-          // console.log(err);
-        });
-      }
-
-      //Update extisting record
-      function RecordUpdate(base, tableName, dataGroup) {
-        // console.log("=====Update existing record=====");
-        //test OK!
-        // console.log("★ dataGroup = ");
-        // console.log(JSON.stringify(dataGroup));
-
-        return new Promise((resolve, reject) => {
-          let text = "";
-          if (dataGroup) {
-            base(tableName).update(dataGroup, { typecast: true }, function (
-              err,
-              records
-            ) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              records.forEach(function (record) {
-                text = `record ID ${record.id} from ${tableName} is UPDATED!`;
-              });
-              resolve(text);
-            });
-          } else {
-            reject();
-          }
-        }).catch((err) => {
-          // console.log(err);
-        });
-      }
-
-      //===RUN===
-
-      var baseID = "appAThxvZSRLzrXta"; //Jibble Datastore
-      // console.log(`★ baseID = ${baseID}`);
-
-      var tableName = "บันทึกเวลาเข้าออก";
-      // console.log(`★ tableName = ${tableName}`);
-
-      var recordID = await RetrieveID(baseDR, tableName, recordPK);
-      // console.log(`★ recordID = ${recordID}`);
-
-      // Jibbled out the existing record
-      if (recordID) {
-        // console.log(`★ There is an existing record that hasn't Jibbled out yet, Jibble out this record`);
-        let jibOutData = [
-          {
-            id: recordID,
-            fields: {
-              "เวลาออกงาน (Last Out)": dateTime
+              ]
             }
-          }
-        ];
-        try {
-          let updateRecord = await RecordUpdate(baseDR, tableName, jibOutData);
-          // console.log(updateRecord);
-        } catch (error) {
-          await fn.SendBUGmsg("updateRecord", "index.js", error, req.body);
-        }
-      }
+          ]
+        })
+      );
 
-      // Check if it's Jibbled in or out
-      // Jibbled in case, create new record
-      if (event.text.includes("*jibbled in*")) {
-        // create new record
-        var dataGroup = await JibbleLayout(
-          event,
-          recordID,
-          name,
-          dateTime,
-          workType,
-          des,
-          day,
-          imgURL
-        );
-        // console.log(`★ dataGroup =`);
-        // console.log(dataGroup);
-        try {
-          var createRecord = await RecordCreate(baseDR, tableName, dataGroup);
-          // console.log(createRecord);
-        } catch (error) {
-          await fn.SendBUGmsg("createRecord", "index.js", error, req.body);
-        }
-      }
+      //====== Update 22/05/2021 changed platform from 'Airtable' to 'CODA' ======
+      //Insert new row on table 'Time Attendacnce' (DocID = "W9JPLH4vI4", tableID = "grid-gAo_Y-j4MP")
+      await axios({
+        method: "post",
+        url: `https://coda.io/apis/v1/docs/W9JPLH4vI4/tables/grid-gAo_Y-j4MP/rows`,
+        headers: {
+          Authorization: `Bearer ${process.env.CODA_API_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        data: JSON.stringify({
+          rows: [
+            {
+              cells: [
+                {
+                  column: "ชื่อพนักงาน",
+                  value: workType.includes("DC") ? "" : name
+                },
+                {
+                  column: "ชื่อคนงาน",
+                  value: workType.includes("DC") ? name : ""
+                },
+                {
+                  column: "วันที่",
+                  value: day || ""
+                },
+                {
+                  column: "เวลาเข้างาน (First In)",
+                  value: event.text.includes("jibbled in") ? dateTime : ""
+                },
+                {
+                  column: "เวลาออกงาน (Last Out)",
+                  value: event.text.includes("jibbled in") ? "" : dateTime
+                },
+                {
+                  column: "โครงการ",
+                  value: project.join(",")
+                },
+                {
+                  column: "ประเภทงาน",
+                  value: workType.join(",")
+                },
+                {
+                  column: "รายละเอียด",
+                  value: des.join(",")
+                }
+              ]
+            }
+          ]
+        })
+      })
+        .then((res) => {
+          console.log(`update Jibble data to CODA successfully`);
+        })
+        .catch(async (error) => {
+          await fn.SendBUGmsg(
+            "Insert new row on table 'Time Attendacnce'",
+            "index.js",
+            error,
+            req.body
+          );
+        });
     }
   }
 
