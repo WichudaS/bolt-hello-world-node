@@ -1308,7 +1308,7 @@ app.post("/integromat/hooks", async function (req, res) {
 //Uncomment this line below to Stop slack from event running
 // app.get('/event' , async(req, res) => {
 app.post("/slack/events", async (req, res) => {
-  // res.status(200);
+  res.status(200);
 
   //LOG REQUEST===============
   console.log(
@@ -1324,8 +1324,8 @@ app.post("/slack/events", async (req, res) => {
   // console.log(req.body.context);
   // console.log("----------req.body.payload----------");
   // console.log(req.body.payload);
-  // console.log("----------req.body.event----------");
-  // console.log(req.body.event);
+  console.log("----------req.body.event----------");
+  console.log(req.body.event);
   console.log(
     "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
   );
@@ -1639,11 +1639,11 @@ app.post("/slack/events", async (req, res) => {
               cells: [
                 {
                   column: "ชื่อพนักงาน",
-                  value: workType.includes("DC") ? "" : name
+                  value: event.text.includes("DC") ? "" : name
                 },
                 {
                   column: "ชื่อคนงาน",
-                  value: workType.includes("DC") ? name : ""
+                  value: event.text.includes("DC") ? name : ""
                 },
                 {
                   column: "วันที่",
@@ -1690,11 +1690,11 @@ app.post("/slack/events", async (req, res) => {
               cells: [
                 {
                   column: "ชื่อพนักงาน",
-                  value: workType.includes("DC") ? "" : name
+                  value: event.text.includes("DC") ? "" : name
                 },
                 {
                   column: "ชื่อคนงาน",
-                  value: workType.includes("DC") ? name : ""
+                  value: event.text.includes("DC") ? name : ""
                 },
                 {
                   column: "วันที่",
@@ -1730,7 +1730,7 @@ app.post("/slack/events", async (req, res) => {
         })
         .catch(async (error) => {
           await fn.SendBUGmsg(
-            "Insert new row on table 'Time Attendacnce'",
+            "Insert new row on table 'Time Attendant'",
             "index.js",
             error,
             req.body
