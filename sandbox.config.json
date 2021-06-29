@@ -2,5 +2,7 @@
   "infiniteLoopProtection": true,
   "hardReloadOnChange": true,
   "view": "browser",
-  // "disableLogging": false
+  "container": {
+    "node": "10"
+  }
 }

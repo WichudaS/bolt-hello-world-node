@@ -1549,6 +1549,7 @@ app.post("/slack/events", async (req, res) => {
 
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to CODA' ======================
     //*UPDATE 22/05/2021* : change Timetable storing database to from 'Airtable' to 'CODA'
+    //*UPDATE 29/06/2021* : Change from 'delete only "DC" text before name' to 'delete entire DC code before name'
 
     if (
       event.type == "message" &&
@@ -1561,12 +1562,16 @@ app.post("/slack/events", async (req, res) => {
       //===DECLARE VAR====
 
       // *UPDATE* แก้ format ชื่อ
-      var name = event.text
-        .split("*")
-        .splice(0, 1)
-        .reduce((n) => n)
-        .replace("DC", "")
-        .trim();
+      // *UPDATE* Delete Entire DC code because it will be more flexible for DC code to be named
+      var preName = event.text
+        .split("*")[0]
+        .split(" ")
+        .filter((n) => n);
+
+      var name =
+        preName.length > 2
+          ? preName.splice(preName.length - 2, 2).join(" ")
+          : preName.join(" ");
       console.log(`★ name = ${name}`);
       var project = [];
       var workType = [];
