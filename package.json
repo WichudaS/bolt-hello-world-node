@@ -1,7 +1,7 @@
 {
-  "name": "kdc-bot",
+  "name": "linked-kdc-server",
   "version": "0.0.1",
-  "description": "",
+  "description": "please commit into master branch!",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
