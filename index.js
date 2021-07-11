@@ -80,7 +80,7 @@ var today = dateFormat(now, "yyyy-mm-dd");
 //===========================Test with get on index route===========================
 app.get("/", async function (req, res) {
   console.log(`RUN test...`);
-  res.send(`Hi!, server is running...`);
+  res.send("Hi! Server is Running ❤️");
 });
 
 //=============================Jotform webhooks====================================
@@ -1366,16 +1366,16 @@ app.post("/slack/events", async (req, res) => {
   );
   console.log("----------req.body.type----------");
   console.log(req.body.type);
-  console.log("----------req.body----------");
-  console.log(req.body);
+  // console.log("----------req.body----------");
+  // console.log(req.body);
   console.log("----------req.body.string----------");
   console.log(JSON.stringify(req.body));
-  console.log("----------req.body.context----------");
-  console.log(req.body.context);
-  console.log("----------req.body.payload----------");
-  console.log(req.body.payload);
-  console.log("----------req.body.event----------");
-  console.log(req.body.event);
+  // console.log("----------req.body.context----------");
+  // console.log(req.body.context);
+  // console.log("----------req.body.payload----------");
+  // console.log(req.body.payload);
+  // console.log("----------req.body.event----------");
+  // console.log(req.body.event);
   console.log(
     "---------------" + req.body.type + " REQUEST ENDS HERE---------------"
   );
@@ -1419,11 +1419,12 @@ app.post("/slack/events", async (req, res) => {
             "https://hook.integromat.com/8y5omxcwprpsnwlrsujt38i1tllp1dw9",
             qs.stringify(request)
           )
-          .then(async (res) => {
+          .then(async (createNewDocResponse) => {
             //PUT checked on coda table
-            console.log(`create doc result = ${res.data}`);
+            console.log(`create doc result = ${createNewDocResponse.data}`);
 
-            response.successPayload.row.cells[2].value = res.data;
+            response.successPayload.row.cells[2].value =
+              createNewDocResponse.data;
             console.log(`res.successpayload= `);
             console.log(JSON.stringify(response.successPayload));
 
@@ -1434,8 +1435,10 @@ app.post("/slack/events", async (req, res) => {
                 Authorization: `Bearer ${process.env.CODA_API_TOKEN}`
               },
               data: response.successPayload
-            }).then((res) => {
-              console.log(`update SUCCESS coda table result = ${res.status}`);
+            }).then((CODACheckedSymbolRes) => {
+              console.log(
+                `update SUCCESS coda table result = ${CODACheckedSymbolRes.status}`
+              );
             });
 
             //send check emoji to message
@@ -1449,9 +1452,9 @@ app.post("/slack/events", async (req, res) => {
                   timestamp: event.ts
                 })
               )
-              .then((res) => {
+              .then((SlackCheckedSymbolRes) => {
                 console.log(
-                  `update SUCCESS Slack emoji result = ${res.status}`
+                  `update SUCCESS Slack emoji result = ${SlackCheckedSymbolRes.status}`
                 );
               });
           })
@@ -1467,8 +1470,10 @@ app.post("/slack/events", async (req, res) => {
                 Authorization: `Bearer ${process.env.CODA_API_TOKEN}`
               },
               data: response.failedPayload
-            }).then((res) => {
-              console.log(`update FAILED coda table result = ${res.status}`);
+            }).then((CODAErrorTableRes) => {
+              console.log(
+                `update FAILED coda table result = ${CODAErrorTableRes.status}`
+              );
             });
 
             //send cross emoji
@@ -1482,8 +1487,10 @@ app.post("/slack/events", async (req, res) => {
                   timestamp: event.ts
                 })
               )
-              .then((res) => {
-                console.log(`update FAILED emoji result = ${res.status}`);
+              .then((SlackErrorSymbolRes) => {
+                console.log(
+                  `update FAILED emoji result = ${SlackErrorSymbolRes.status}`
+                );
               });
 
             //send error message to #bug
@@ -1598,6 +1605,7 @@ app.post("/slack/events", async (req, res) => {
     //'incoming Jibble message' in '#hr in-out channel' => 'Save to CODA' ======================
     //*UPDATE 22/05/2021* : change Timetable storing database to from 'Airtable' to 'CODA'
     //*UPDATE 29/06/2021* : Change from 'delete only "DC" text before name' to 'delete entire DC code before name'
+    //*UPDATE 07/11/2021* : Change 'In' and 'Out' Timestamp column name
 
     if (
       event.type == "message" &&
@@ -1607,6 +1615,7 @@ app.post("/slack/events", async (req, res) => {
     ) {
       console.log("★ CASE: Save jibble message to CODA");
       res.sendStatus(204);
+
       //===DECLARE VAR====
 
       // *UPDATE* แก้ format ชื่อ
@@ -1703,11 +1712,11 @@ app.post("/slack/events", async (req, res) => {
                   value: dateTime || ""
                 },
                 {
-                  column: "เวลาเข้างาน (First In)",
+                  column: "เวลาเข้างาน (In)",
                   value: event.text.includes("jibbled in") ? dateTime : ""
                 },
                 {
-                  column: "เวลาออกงาน (Last Out)",
+                  column: "เวลาออกงาน (Out)",
                   value: event.text.includes("jibbled in") ? "" : dateTime
                 },
                 {
@@ -1754,11 +1763,11 @@ app.post("/slack/events", async (req, res) => {
                   value: day || ""
                 },
                 {
-                  column: "เวลาเข้างาน (First In)",
+                  column: "เวลาเข้างาน (In)",
                   value: event.text.includes("jibbled in") ? dateTime : ""
                 },
                 {
-                  column: "เวลาออกงาน (Last Out)",
+                  column: "เวลาออกงาน (Out)",
                   value: event.text.includes("jibbled in") ? "" : dateTime
                 },
                 {
@@ -1778,7 +1787,8 @@ app.post("/slack/events", async (req, res) => {
           ]
         })
       })
-        .then((res) => {
+        .then((CODAres) => {
+          console.log(CODAres.data);
           console.log(`update Jibble data to CODA successfully`);
         })
         .catch(async (error) => {
