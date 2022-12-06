@@ -16,7 +16,7 @@
     "express-formidable": "^1.2.0",
     "firebase-admin": "^9.1.0",
     "jotform": "^0.1.4",
-    "qs": "^6.9.4",
+    "qs": "^6.9.7",
     "tinyurl": "^1.1.7",
     "tsscmp": "^1.0.6"
   },
